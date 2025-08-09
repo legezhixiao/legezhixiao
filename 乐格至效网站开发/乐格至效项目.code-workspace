@@ -1,0 +1,80 @@
+{
+	"folders": [
+		{
+			"path": ".",
+			"name": "乐格至效项目"
+		}
+	],
+	"settings": {
+		"files.exclude": {
+			"**/.git": true,
+			"**/.svn": true,
+			"**/.hg": true,
+			"**/CVS": true,
+			"**/.DS_Store": true,
+			"**/node_modules": true
+		},
+		"editor.formatOnSave": true,
+		"editor.codeActionsOnSave": {
+			"source.fixAll.eslint": true
+		},
+		"typescript.tsdk": "./node_modules/typescript/lib",
+		"files.eol": "\n",
+		"files.watcherExclude": {
+			"**/.git/objects/**": true,
+			"**/.git/subtree-cache/**": true,
+			"**/node_modules/**": true,
+			"**/.hg/store/**": true
+		},
+		"search.exclude": {
+			"**/node_modules": true,
+			"**/bower_components": true,
+			"**/*.code-search": true
+		}
+	},
+	"launch": {
+		"configurations": [
+			{
+				"type": "node",
+				"request": "launch",
+				"name": "启动后端服务",
+				"skipFiles": [
+					"<node_internals>/**"
+				],
+				"program": "${workspaceFolder}/legezhixiao/backend/src/server.ts",
+				"outFiles": [
+					"${workspaceFolder}/legezhixiao/backend/dist/**/*.js"
+				],
+				"preLaunchTask": "构建后端",
+				"env": {
+					"NODE_ENV": "development"
+				}
+			}
+		]
+	},
+	"tasks": {
+		"version": "2.0.0",
+		"tasks": [
+			{
+				"label": "构建后端",
+				"type": "npm",
+				"script": "build",
+				"path": "legezhixiao/backend",
+				"group": {
+					"kind": "build",
+					"isDefault": true
+				}
+			},
+			{
+				"label": "启动开发环境",
+				"type": "shell",
+				"command": "npm run dev",
+				"path": "legezhixiao/backend",
+				"isBackground": true,
+				"problemMatcher": [
+					"$tsc-watch"
+				]
+			}
+		]
+	}
+}

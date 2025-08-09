@@ -1,0 +1,334 @@
+/* 浮动AI助手按钮样式 - 科技感增强版 */
+.floating-ai-button {
+    user-select: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.floating-ai-button:hover {
+    transform: scale(1.1);
+}
+
+.floating-ai-button.dragging {
+    transform: scale(1.05);
+    transition: none;
+}
+
+.floating-ai-button .ai-button {
+    width: 60px;
+    height: 60px;
+    border: none;
+    box-shadow: 
+        0 4px 16px rgba(0, 0, 0, 0.2),
+        0 0 0 1px rgba(24, 144, 255, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    font-size: 24px;
+    position: relative;
+    z-index: 3;
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #06b6d4 100%);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.floating-ai-button.active .ai-button {
+    background: linear-gradient(135deg, #1890ff, #13c2c2, #52c41a);
+    border-color: #1890ff;
+    color: white;
+    box-shadow: 
+        0 6px 20px rgba(24, 144, 255, 0.4),
+        0 0 30px rgba(24, 144, 255, 0.2),
+        0 0 0 1px rgba(24, 144, 255, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    animation: tech-glow 2s ease-in-out infinite alternate;
+}
+
+.floating-ai-button:hover .ai-button {
+    box-shadow: 
+        0 6px 24px rgba(0, 0, 0, 0.3),
+        0 0 20px rgba(24, 144, 255, 0.3),
+        0 0 0 1px rgba(24, 144, 255, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* 科技感光效动画 */
+@keyframes tech-glow {
+    0% {
+        box-shadow: 
+            0 6px 20px rgba(24, 144, 255, 0.4),
+            0 0 30px rgba(24, 144, 255, 0.2),
+            0 0 0 1px rgba(24, 144, 255, 0.5),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+    100% {
+        box-shadow: 
+            0 8px 25px rgba(24, 144, 255, 0.6),
+            0 0 40px rgba(24, 144, 255, 0.4),
+            0 0 0 1px rgba(24, 144, 255, 0.7),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+}
+
+/* 呼吸光效 - 增强版 */
+.pulse-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    border: 2px solid #1890ff;
+    border-radius: 50%;
+    opacity: 0;
+    animation: pulse 2s ease-in-out infinite;
+    z-index: 1;
+    box-shadow: 0 0 20px rgba(24, 144, 255, 0.3);
+}
+
+.pulse-ring-delay {
+    animation-delay: 1s;
+    border-color: #13c2c2;
+}
+
+.floating-ai-button.active .pulse-ring {
+    border-color: #13c2c2;
+    box-shadow: 0 0 30px rgba(19, 194, 194, 0.4);
+}
+
+.floating-ai-button.active .pulse-ring-delay {
+    border-color: #52c41a;
+    box-shadow: 0 0 25px rgba(82, 196, 26, 0.3);
+}
+
+@keyframes pulse {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.8;
+        filter: blur(0px);
+    }
+
+    50% {
+        opacity: 0.4;
+        filter: blur(1px);
+    }
+
+    100% {
+        transform: translate(-50%, -50%) scale(2.5);
+        opacity: 0;
+        filter: blur(2px);
+    }
+}
+
+/* 科技感扫描线效果 */
+.scan-line {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 1px solid transparent;
+    border-top-color: #1890ff;
+    animation: scan 3s linear infinite;
+    z-index: 2;
+    opacity: 0.6;
+}
+
+.scan-line-delay {
+    animation-delay: 1.5s;
+    border-top-color: #13c2c2;
+    width: 90px;
+    height: 90px;
+}
+
+@keyframes scan {
+    0% {
+        transform: translate(-50%, -50%) rotate(0deg);
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 0.3;
+    }
+    100% {
+        transform: translate(-50%, -50%) rotate(360deg);
+        opacity: 0.6;
+    }
+}
+
+/* 能量粒子效果 */
+.energy-particle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 3px;
+    height: 3px;
+    background: #1890ff;
+    border-radius: 50%;
+    opacity: 0;
+    animation: particle-float 4s ease-in-out infinite;
+    z-index: 1;
+    box-shadow: 0 0 6px #1890ff;
+}
+
+.energy-particle:nth-child(2) {
+    animation-delay: 0.5s;
+    background: #13c2c2;
+    box-shadow: 0 0 6px #13c2c2;
+}
+
+.energy-particle:nth-child(3) {
+    animation-delay: 1s;
+    background: #52c41a;
+    box-shadow: 0 0 6px #52c41a;
+}
+
+.energy-particle:nth-child(4) {
+    animation-delay: 1.5s;
+    background: #fa8c16;
+    box-shadow: 0 0 6px #fa8c16;
+}
+
+@keyframes particle-float {
+    0% {
+        transform: translate(-50%, -50%) rotate(0deg) translateY(-40px) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -50%) rotate(360deg) translateY(-60px) rotate(-360deg);
+        opacity: 0;
+    }
+}
+
+/* 拖拽时的样式 */
+.floating-ai-button.dragging .pulse-ring,
+.floating-ai-button.dragging .scan-line,
+.floating-ai-button.dragging .energy-particle {
+    animation-play-state: paused;
+}
+
+/* 全息投影效果 */
+.hologram-effect {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: 
+        radial-gradient(circle at 30% 30%, rgba(24, 144, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 70% 70%, rgba(19, 194, 194, 0.1) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 0;
+    animation: hologram 5s ease-in-out infinite;
+}
+
+@keyframes hologram {
+    0%, 100% {
+        opacity: 0.2;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+        opacity: 0.4;
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+}
+
+.floating-ai-button:hover .hologram-effect {
+    opacity: 0.6;
+}
+
+.floating-ai-button.active .hologram-effect {
+    opacity: 0.8;
+    animation-duration: 3s;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .floating-ai-button .ai-button {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+
+    .pulse-ring {
+        width: 50px;
+        height: 50px;
+    }
+
+    .scan-line {
+        width: 70px;
+        height: 70px;
+    }
+
+    .scan-line-delay {
+        width: 80px;
+        height: 80px;
+    }
+
+    .hologram-effect {
+        width: 100px;
+        height: 100px;
+    }
+}
+
+/* 数据流效果 */
+.data-stream {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100px;
+    height: 100px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    opacity: 0.3;
+    z-index: 1;
+}
+
+.data-stream::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 50%;
+    background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(24, 144, 255, 0.3) 45deg,
+        transparent 90deg,
+        rgba(19, 194, 194, 0.3) 135deg,
+        transparent 180deg,
+        rgba(82, 196, 26, 0.3) 225deg,
+        transparent 270deg,
+        rgba(24, 144, 255, 0.3) 315deg,
+        transparent 360deg
+    );
+    animation: data-rotate 8s linear infinite;
+}
+
+@keyframes data-rotate {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.floating-ai-button.active .data-stream {
+    opacity: 0.5;
+}
+
+.floating-ai-button.active .data-stream::before {
+    animation-duration: 4s;
+}

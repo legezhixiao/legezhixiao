@@ -1,0 +1,117 @@
+/* 历史会话按钮的增强样式 */
+.history-button-enhanced {
+    position: relative;
+    overflow: hidden;
+}
+
+.history-button-enhanced::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s ease;
+}
+
+.history-button-enhanced:hover::before {
+    left: 100%;
+}
+
+/* 会话数量徽章动画 */
+.session-badge {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(24, 144, 255, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(24, 144, 255, 0);
+    }
+}
+
+/* 窗口调整大小时的视觉反馈 */
+.resizing-window {
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.3) !important;
+}
+
+/* 调整大小拖拽点的hover效果 */
+.resize-handle {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.resize-handle:hover {
+    opacity: 1;
+}
+
+/* 窗口边框hover效果 */
+.window-container:hover .resize-handle {
+    opacity: 0.5;
+}
+
+/* 窗口容器样式 */
+.window-container {
+    position: fixed;
+    z-index: 1001;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 拖拽状态的视觉反馈 */
+.window-container.dragging {
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    transform: scale(1.02);
+}
+
+/* 窗口标题栏提示 */
+.window-header {
+    position: relative;
+}
+
+.window-header::after {
+    content: '双击可将窗口拖回屏幕内';
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 1002;
+}
+
+.window-header:hover::after {
+    opacity: 1;
+}
+
+/* 超出屏幕边界时的视觉提示 */
+.window-out-of-bounds {
+    border: 2px solid #ff4d4f !important;
+    box-shadow: 0 0 20px rgba(255, 77, 79, 0.3) !important;
+}
+
+/* 超出屏幕警告动画 */
+@keyframes boundary-warning {
+    0%, 100% {
+        border-color: #ff4d4f;
+    }
+    50% {
+        border-color: #ffa940;
+    }
+}
+
+.window-boundary-warning {
+    animation: boundary-warning 1s ease-in-out infinite;
+}

@@ -1,0 +1,180 @@
+.draggable-ai-window {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.draggable-ai-window.dragging {
+  cursor: move !important;
+  user-select: none;
+}
+
+/* 更新样式类名：从out-of-bounds改为needs-adjustment */
+.draggable-ai-window.needs-adjustment {
+  box-shadow: 0 8px 40px rgba(255, 193, 7, 0.3) !important;
+  border-color: #faad14 !important;
+}
+
+/* 新增：部分超出屏幕时的视觉提示 */
+.draggable-ai-window.partially-hidden {
+  border: 2px solid #1890ff;
+  box-shadow: 0 8px 40px rgba(24, 144, 255, 0.2);
+}
+
+/* 新增：确保关键内容可见的样式 */
+.draggable-ai-window.content-priority {
+  z-index: 1001;
+}
+
+.window-header {
+  position: relative;
+}
+
+.window-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+  pointer-events: none;
+}
+
+.window-header:hover {
+  background: linear-gradient(135deg, #7289da 0%, #8b6db8 100%) !important;
+}
+
+/* 窗口动画效果 */
+.draggable-ai-window {
+  animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* 标题栏按钮悬停效果 */
+.window-header .ant-btn:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: transparent !important;
+}
+
+/* 确保AI面板内容适应窗口 */
+.draggable-ai-window .ai-agent-panel {
+  height: 100%;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.draggable-ai-window .ai-agent-panel .ant-card-head {
+  display: none; /* 隐藏AI面板自己的标题栏，使用窗口标题栏 */
+}
+
+.draggable-ai-window .ai-agent-panel .ant-card-body {
+  height: 100%;
+  padding: 0;
+}
+
+/* 标签页样式调整 */
+.draggable-ai-window .ant-tabs {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.draggable-ai-window .ant-tabs-content-holder {
+  flex: 1;
+  overflow: hidden;
+}
+
+.draggable-ai-window .ant-tabs-tabpane {
+  height: 100%;
+}
+
+.draggable-ai-window .ant-tabs-tabpane-active {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* 对话区域样式调整 */
+.draggable-ai-window .ai-agent-content {
+  height: 100%;
+  max-height: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.draggable-ai-window .conversation-area {
+  flex: 1;
+  min-height: 200px;
+  max-height: none;
+  overflow-y: auto;
+}
+
+/* 确保输入区域始终可见 */
+.draggable-ai-window .input-area {
+  flex-shrink: 0;
+  background: #fff;
+  padding: 16px;
+  border-top: 1px solid #f0f0f0;
+  margin-top: auto;
+}
+
+/* 确保输入控件正常显示 */
+.draggable-ai-window .input-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+/* 确保发送按钮正常显示 */
+.draggable-ai-window .input-controls .ant-btn {
+  min-width: 80px;
+}
+
+/* 调整大小的边缘和角落样式 */
+.resize-edge, .resize-corner {
+  background: transparent;
+  transition: background-color 0.2s ease;
+}
+
+.resize-edge:hover, .resize-corner:hover {
+  background-color: rgba(24, 144, 255, 0.3);
+}
+
+.resize-corner {
+  border-radius: 2px;
+}
+
+/* 调整大小时的视觉反馈 */
+.draggable-ai-window.resizing {
+  box-shadow: 0 12px 48px rgba(24, 144, 255, 0.2);
+  border-color: #1890ff;
+}
+
+.draggable-ai-window.resizing .resize-edge:hover,
+.draggable-ai-window.resizing .resize-corner:hover {
+  background-color: rgba(24, 144, 255, 0.5);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .draggable-ai-window {
+    width: calc(100vw - 20px) !important;
+    height: calc(100vh - 20px) !important;
+    left: 10px !important;
+    top: 10px !important;
+    border-radius: 8px;
+  }
+}

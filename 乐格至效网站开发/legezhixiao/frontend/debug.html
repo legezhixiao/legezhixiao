@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>前端调试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 前端诊断页面</h1>
+        
+        <div class="status success">
+            ✅ HTML页面已加载
+        </div>
+        
+        <div id="js-status" class="status error">
+            ❌ JavaScript未加载
+        </div>
+        
+        <div id="api-status" class="status info">
+            🔄 正在检查API连接...
+        </div>
+        
+        <h2>操作</h2>
+        <button onclick="testAPI()">测试后端API</button>
+        <button onclick="testVite()">测试Vite开发服务器</button>
+        <button onclick="checkConsole()">检查控制台错误</button>
+        <button onclick="window.location.href='/'">返回主应用</button>
+        
+        <h2>日志</h2>
+        <pre id="log-area"></pre>
+    </div>
+
+    <script>
+        // 标记JavaScript已加载
+        document.getElementById('js-status').className = 'status success';
+        document.getElementById('js-status').textContent = '✅ JavaScript已加载';
+        
+        const logArea = document.getElementById('log-area');
+        
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            logArea.textContent += `[${timestamp}] ${message}\n`;
+            console.log(message);
+        }
+        
+        log('页面初始化完成');
+        
+        async function testAPI() {
+            try {
+                log('正在测试后端API...');
+                const response = await fetch('http://localhost:3000/api/db-status');
+                if (response.ok) {
+                    const data = await response.json();
+                    log('✅ API测试成功: ' + JSON.stringify(data));
+                    document.getElementById('api-status').className = 'status success';
+                    document.getElementById('api-status').textContent = '✅ API连接正常';
+                } else {
+                    log('❌ API测试失败: HTTP ' + response.status);
+                    document.getElementById('api-status').className = 'status error';
+                    document.getElementById('api-status').textContent = '❌ API连接失败: HTTP ' + response.status;
+                }
+            } catch (error) {
+                log('❌ API测试异常: ' + error.message);
+                document.getElementById('api-status').className = 'status error';
+                document.getElementById('api-status').textContent = '❌ API连接异常: ' + error.message;
+            }
+        }
+        
+        async function testVite() {
+            try {
+                log('正在测试Vite开发服务器...');
+                const response = await fetch('/src/main.tsx');
+                if (response.ok) {
+                    log('✅ Vite开发服务器正常');
+                } else {
+                    log('❌ Vite开发服务器异常: HTTP ' + response.status);
+                }
+            } catch (error) {
+                log('❌ Vite测试异常: ' + error.message);
+            }
+        }
+        
+        function checkConsole() {
+            log('请检查浏览器控制台的错误信息');
+            console.log('=== 控制台检查 ===');
+            console.log('当前页面:', window.location.href);
+            console.log('用户代理:', navigator.userAgent);
+        }
+        
+        // 自动测试API
+        testAPI();
+        testVite();
+    </script>
+</body>
+</html>

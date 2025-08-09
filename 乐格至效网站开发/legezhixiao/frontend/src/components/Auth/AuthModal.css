@@ -1,0 +1,145 @@
+/* 认证表单样式 */
+.auth-form {
+    padding: 24px;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.auth-header {
+    margin-bottom: 32px;
+    text-align: center;
+}
+
+.auth-form .ant-form-item {
+    margin-bottom: 16px;
+}
+
+.auth-form .ant-form-item-label > label {
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.85);
+}
+
+.auth-form .ant-input-affix-wrapper,
+.auth-form .ant-input {
+    border-radius: 8px;
+    border: 1px solid #d9d9d9;
+    transition: all 0.3s;
+}
+
+.auth-form .ant-input-affix-wrapper:hover,
+.auth-form .ant-input:hover {
+    border-color: #40a9ff;
+}
+
+.auth-form .ant-input-affix-wrapper:focus,
+.auth-form .ant-input:focus,
+.auth-form .ant-input-affix-wrapper-focused {
+    border-color: #1890ff;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.auth-form .ant-btn-primary {
+    height: 40px;
+    border-radius: 8px;
+    font-weight: 500;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    transition: all 0.3s;
+}
+
+.auth-form .ant-btn-primary:hover {
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+    transform: translateY(-2px);
+}
+
+.auth-form .ant-checkbox-wrapper {
+    color: rgba(0, 0, 0, 0.65);
+}
+
+.auth-form .ant-divider {
+    margin: 24px 0;
+}
+
+.auth-form .ant-divider-inner-text {
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 12px;
+}
+
+.demo-accounts {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-radius: 8px;
+    border: 1px solid #e8e8e8;
+}
+
+/* 响应式设计 */
+@media (max-width: 576px) {
+    .auth-form {
+        padding: 16px;
+    }
+    
+    .auth-header {
+        margin-bottom: 24px;
+    }
+}
+
+/* 错误提示样式 */
+.auth-form .ant-alert {
+    border-radius: 8px;
+    border: none;
+}
+
+.auth-form .ant-alert-error {
+    background: #fff2f0;
+    border: 1px solid #ffccc7;
+}
+
+/* 链接样式 */
+.auth-form .ant-typography a {
+    color: #1890ff;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+.auth-form .ant-typography a:hover {
+    color: #40a9ff;
+    text-decoration: none;
+}
+
+/* 结果页面样式 */
+.auth-form .ant-result {
+    padding: 24px 0;
+}
+
+.auth-form .ant-result-title {
+    color: rgba(0, 0, 0, 0.85);
+}
+
+.auth-form .ant-result-subtitle {
+    color: rgba(0, 0, 0, 0.65);
+    line-height: 1.6;
+}
+
+/* 加载状态 */
+.auth-form .ant-btn-loading {
+    pointer-events: none;
+}
+
+/* 表单验证样式 */
+.auth-form .ant-form-item-has-error .ant-input,
+.auth-form .ant-form-item-has-error .ant-input-affix-wrapper {
+    border-color: #ff4d4f;
+}
+
+.auth-form .ant-form-item-has-error .ant-input:focus,
+.auth-form .ant-form-item-has-error .ant-input-affix-wrapper:focus,
+.auth-form .ant-form-item-has-error .ant-input-affix-wrapper-focused {
+    border-color: #ff4d4f;
+    box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
+}
+
+.auth-form .ant-form-item-explain-error {
+    color: #ff4d4f;
+    font-size: 12px;
+    margin-top: 4px;
+}

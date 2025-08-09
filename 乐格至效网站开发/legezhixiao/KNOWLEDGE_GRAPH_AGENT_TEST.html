@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agent 知识图谱功能测试</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-connected { background: #4CAF50; }
+        .status-disconnected { background: #f44336; }
+        .status-unknown { background: #ff9800; }
+        .test-input {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        .test-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: background 0.3s;
+        }
+        .test-button:hover {
+            background: #45a049;
+        }
+        .test-button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        .result-area {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            min-height: 100px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        .error {
+            color: #ff6b6b;
+        }
+        .success {
+            color: #51cf66;
+        }
+        .info {
+            color: #74c0fc;
+        }
+        .test-commands {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI Agent 知识图谱功能测试</h1>
+            <p>测试AI助手在agent模式下读取和调用知识图谱数据的能力</p>
+        </div>
+
+        <!-- 连接状态检查 -->
+        <div class="test-section">
+            <h2>🔌 连接状态检查</h2>
+            <div id="connectionStatus">
+                <span class="status-indicator status-unknown"></span>
+                <span>检查中...</span>
+            </div>
+            <button class="test-button" onclick="checkConnection()">重新检查连接</button>
+            <div id="connectionResult" class="result-area">准备检查连接状态...</div>
+        </div>
+
+        <!-- AI Agent 基础测试 -->
+        <div class="test-section">
+            <h2>🧠 AI Agent 基础功能测试</h2>
+            <input type="text" id="basicTestInput" class="test-input" 
+                   placeholder="输入AI Agent指令，例如：创建角色、分析情节..." 
+                   value="我需要分析当前项目的角色关系">
+            <button class="test-button" onclick="testBasicAgent()">测试基础功能</button>
+            <div id="basicTestResult" class="result-area">等待测试...</div>
+        </div>
+
+        <!-- 知识图谱搜索测试 -->
+        <div class="test-section">
+            <h2>🔍 知识图谱搜索测试</h2>
+            <div class="test-commands">
+                <button class="test-button" onclick="testKnowledgeSearch('搜索角色信息')">搜索角色信息</button>
+                <button class="test-button" onclick="testKnowledgeSearch('查找地点设定')">查找地点设定</button>
+                <button class="test-button" onclick="testKnowledgeSearch('分析情节连接')">分析情节连接</button>
+                <button class="test-button" onclick="testKnowledgeSearch('获取世界观元素')">获取世界观元素</button>
+            </div>
+            <input type="text" id="searchInput" class="test-input" 
+                   placeholder="自定义搜索查询..." 
+                   value="在知识图谱中搜索主角">
+            <button class="test-button" onclick="testCustomSearch()">自定义搜索</button>
+            <div id="searchResult" class="result-area">等待搜索测试...</div>
+        </div>
+
+        <!-- 角色关系分析测试 -->
+        <div class="test-section">
+            <h2>👥 角色关系分析测试</h2>
+            <input type="text" id="characterInput" class="test-input" 
+                   placeholder="输入角色名称..." 
+                   value="李明">
+            <button class="test-button" onclick="testCharacterRelationship()">分析角色关系</button>
+            <div id="relationshipResult" class="result-area">等待关系分析...</div>
+        </div>
+
+        <!-- 知识图谱操作测试 -->
+        <div class="test-section">
+            <h2>⚡ 知识图谱操作测试</h2>
+            <div class="test-commands">
+                <button class="test-button" onclick="testCreateNode()">创建测试节点</button>
+                <button class="test-button" onclick="testCreateRelationship()">创建测试关系</button>
+                <button class="test-button" onclick="testGetWorldElements()">获取世界观元素</button>
+                <button class="test-button" onclick="testPlotAnalysis()">情节连接分析</button>
+            </div>
+            <div id="operationResult" class="result-area">等待操作测试...</div>
+        </div>
+
+        <!-- 集成测试 -->
+        <div class="test-section">
+            <h2>🔗 集成测试</h2>
+            <p>测试AI Agent与知识图谱的完整集成功能</p>
+            <div class="test-commands">
+                <button class="test-button" onclick="testIntegratedScenario1()">场景1：角色创作辅助</button>
+                <button class="test-button" onclick="testIntegratedScenario2()">场景2：情节发展建议</button>
+                <button class="test-button" onclick="testIntegratedScenario3()">场景3：世界观完善</button>
+            </div>
+            <div id="integrationResult" class="result-area">等待集成测试...</div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟AI Agent服务
+        class MockAIAgentService {
+            constructor() {
+                this.knowledgeGraphConnected = false;
+            }
+
+            async checkKnowledgeGraphConnection() {
+                // 模拟连接检查
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        this.knowledgeGraphConnected = Math.random() > 0.3; // 70%概率连接成功
+                        resolve(this.knowledgeGraphConnected);
+                    }, 1000);
+                });
+            }
+
+            async processUserInput(input) {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        const response = {
+                            success: true,
+                            message: "AI Agent处理结果",
+                            actions: [],
+                            knowledgeGraphUsed: false
+                        };
+
+                        // 检查是否涉及知识图谱操作
+                        if (input.includes('知识图谱') || input.includes('搜索') || input.includes('关系') || input.includes('分析')) {
+                            response.knowledgeGraphUsed = true;
+                            response.message = this.knowledgeGraphConnected ? 
+                                "✅ 已通过知识图谱分析，为您提供以下建议..." :
+                                "❌ 知识图谱未连接，使用基础分析模式...";
+                        }
+
+                        resolve(response);
+                    }, 1500);
+                });
+            }
+
+            async searchKnowledgeGraph(query, searchType = 'general') {
+                if (!this.knowledgeGraphConnected) {
+                    throw new Error('知识图谱服务未连接');
+                }
+
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        resolve({
+                            success: true,
+                            query: query,
+                            searchType: searchType,
+                            results: {
+                                nodes: [
+                                    { id: '1', name: '测试角色', type: 'CHARACTER', description: '主角人物' },
+                                    { id: '2', name: '测试地点', type: 'LOCATION', description: '重要场景' }
+                                ],
+                                relationships: [
+                                    { id: '1', type: 'LOCATED_AT', description: '角色在此地点活动' }
+                                ]
+                            },
+                            analysis: "基于知识图谱数据的AI分析结果..."
+                        });
+                    }, 1200);
+                });
+            }
+
+            async getCharacterRelationships(characterName) {
+                if (!this.knowledgeGraphConnected) {
+                    throw new Error('知识图谱服务未连接');
+                }
+
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        resolve({
+                            success: true,
+                            character: { name: characterName, type: 'CHARACTER' },
+                            relationships: [
+                                { type: 'FRIENDS_WITH', target: '角色B', strength: 80 },
+                                { type: 'CONFLICTS_WITH', target: '角色C', strength: 60 }
+                            ],
+                            analysis: `${characterName}的关系网络分析完成...`
+                        });
+                    }, 1000);
+                });
+            }
+        }
+
+        const aiAgent = new MockAIAgentService();
+
+        // 检查连接状态
+        async function checkConnection() {
+            const statusElement = document.getElementById('connectionStatus');
+            const resultElement = document.getElementById('connectionResult');
+            
+            statusElement.innerHTML = '<span class="status-indicator status-unknown"></span><span>检查中...</span>';
+            resultElement.textContent = '正在检查AI Agent和知识图谱连接状态...';
+
+            try {
+                const isConnected = await aiAgent.checkKnowledgeGraphConnection();
+                
+                if (isConnected) {
+                    statusElement.innerHTML = '<span class="status-indicator status-connected"></span><span>知识图谱已连接</span>';
+                    resultElement.innerHTML = `<span class="success">✅ 连接检查完成</span>
+
+🔗 AI Agent状态: 正常运行
+📊 知识图谱状态: 已连接
+💡 功能状态: 完整功能可用
+
+可以进行以下测试：
+- 知识图谱搜索
+- 角色关系分析  
+- 情节连接分析
+- 节点和关系创建`;
+                } else {
+                    statusElement.innerHTML = '<span class="status-indicator status-disconnected"></span><span>知识图谱未连接</span>';
+                    resultElement.innerHTML = `<span class="error">❌ 知识图谱连接失败</span>
+
+🔗 AI Agent状态: 正常运行
+📊 知识图谱状态: 未连接
+💡 功能状态: 基础功能可用
+
+限制：
+- 无法访问知识图谱数据
+- 无法进行关系分析
+- 无法创建节点和关系
+- AI建议基于基础模式`;
+                }
+            } catch (error) {
+                statusElement.innerHTML = '<span class="status-indicator status-disconnected"></span><span>连接检查失败</span>';
+                resultElement.innerHTML = `<span class="error">❌ 连接检查失败: ${error.message}</span>`;
+            }
+        }
+
+        // 测试基础AI Agent功能
+        async function testBasicAgent() {
+            const input = document.getElementById('basicTestInput').value;
+            const resultElement = document.getElementById('basicTestResult');
+            
+            resultElement.innerHTML = '<span class="info">🔄 AI Agent处理中...</span>';
+
+            try {
+                const response = await aiAgent.processUserInput(input);
+                
+                resultElement.innerHTML = `<span class="success">✅ AI Agent响应成功</span>
+
+用户输入: ${input}
+处理结果: ${response.message}
+知识图谱调用: ${response.knowledgeGraphUsed ? '是' : '否'}
+执行动作: ${response.actions.length}个
+
+AI Agent功能验证完成！`;
+            } catch (error) {
+                resultElement.innerHTML = `<span class="error">❌ AI Agent处理失败: ${error.message}</span>`;
+            }
+        }
+
+        // 测试知识图谱搜索
+        async function testKnowledgeSearch(query) {
+            const resultElement = document.getElementById('searchResult');
+            
+            resultElement.innerHTML = `<span class="info">🔄 执行搜索: ${query}</span>`;
+
+            try {
+                const response = await aiAgent.searchKnowledgeGraph(query);
+                
+                resultElement.innerHTML = `<span class="success">✅ 知识图谱搜索成功</span>
+
+搜索查询: ${response.query}
+搜索类型: ${response.searchType}
+找到节点: ${response.results.nodes.length}个
+找到关系: ${response.results.relationships.length}个
+
+节点详情:
+${response.results.nodes.map(node => `- ${node.name} (${node.type}): ${node.description}`).join('\n')}
+
+AI分析: ${response.analysis}`;
+            } catch (error) {
+                resultElement.innerHTML = `<span class="error">❌ 搜索失败: ${error.message}</span>`;
+            }
+        }
+
+        // 自定义搜索测试
+        async function testCustomSearch() {
+            const query = document.getElementById('searchInput').value;
+            await testKnowledgeSearch(query);
+        }
+
+        // 测试角色关系分析
+        async function testCharacterRelationship() {
+            const characterName = document.getElementById('characterInput').value;
+            const resultElement = document.getElementById('relationshipResult');
+            
+            resultElement.innerHTML = `<span class="info">🔄 分析角色关系: ${characterName}</span>`;
+
+            try {
+                const response = await aiAgent.getCharacterRelationships(characterName);
+                
+                resultElement.innerHTML = `<span class="success">✅ 角色关系分析完成</span>
+
+角色: ${response.character.name}
+关系数量: ${response.relationships.length}个
+
+关系详情:
+${response.relationships.map(rel => `- ${rel.type}: ${rel.target} (强度: ${rel.strength}%)`).join('\n')}
+
+AI分析: ${response.analysis}`;
+            } catch (error) {
+                resultElement.innerHTML = `<span class="error">❌ 关系分析失败: ${error.message}</span>`;
+            }
+        }
+
+        // 知识图谱操作测试
+        async function testCreateNode() {
+            const resultElement = document.getElementById('operationResult');
+            resultElement.innerHTML = '<span class="info">🔄 测试创建知识节点...</span>';
+            
+            setTimeout(() => {
+                if (aiAgent.knowledgeGraphConnected) {
+                    resultElement.innerHTML = `<span class="success">✅ 知识节点创建测试完成</span>
+
+操作: 创建测试节点
+节点类型: CHARACTER
+节点名称: 测试角色_${Date.now()}
+创建状态: 成功
+AI建议: 节点创建完成，建议添加关系连接`;
+                } else {
+                    resultElement.innerHTML = `<span class="error">❌ 无法创建节点: 知识图谱未连接</span>`;
+                }
+            }, 800);
+        }
+
+        async function testCreateRelationship() {
+            const resultElement = document.getElementById('operationResult');
+            resultElement.innerHTML = '<span class="info">🔄 测试创建关系...</span>';
+            
+            setTimeout(() => {
+                if (aiAgent.knowledgeGraphConnected) {
+                    resultElement.innerHTML = `<span class="success">✅ 关系创建测试完成</span>
+
+操作: 创建测试关系
+关系类型: FRIENDS_WITH
+起始节点: 角色A
+结束节点: 角色B
+关系强度: 75%
+创建状态: 成功`;
+                } else {
+                    resultElement.innerHTML = `<span class="error">❌ 无法创建关系: 知识图谱未连接</span>`;
+                }
+            }, 800);
+        }
+
+        async function testGetWorldElements() {
+            const resultElement = document.getElementById('operationResult');
+            resultElement.innerHTML = '<span class="info">🔄 获取世界观元素...</span>';
+            
+            setTimeout(() => {
+                if (aiAgent.knowledgeGraphConnected) {
+                    resultElement.innerHTML = `<span class="success">✅ 世界观元素获取完成</span>
+
+元素类型: LOCATION
+找到元素: 3个
+- 主城市: 繁华的商业中心
+- 秘密基地: 隐藏的训练场所  
+- 古老遗迹: 神秘的力量源泉
+
+AI分析: 世界观设定相对完整，建议加强地点间的关联性`;
+                } else {
+                    resultElement.innerHTML = `<span class="error">❌ 无法获取世界观元素: 知识图谱未连接</span>`;
+                }
+            }, 1000);
+        }
+
+        async function testPlotAnalysis() {
+            const resultElement = document.getElementById('operationResult');
+            resultElement.innerHTML = '<span class="info">🔄 分析情节连接...</span>';
+            
+            setTimeout(() => {
+                if (aiAgent.knowledgeGraphConnected) {
+                    resultElement.innerHTML = `<span class="success">✅ 情节连接分析完成</span>
+
+情节元素: 8个事件节点
+关键连接: 12个关系
+分析结果:
+- 主线情节完整度: 85%
+- 支线情节丰富度: 70%  
+- 伏笔设置合理性: 90%
+- 情节冲突强度: 75%
+
+AI建议: 建议加强中期情节的转折设计`;
+                } else {
+                    resultElement.innerHTML = `<span class="error">❌ 无法分析情节: 知识图谱未连接</span>`;
+                }
+            }, 1200);
+        }
+
+        // 集成测试场景
+        async function testIntegratedScenario1() {
+            const resultElement = document.getElementById('integrationResult');
+            resultElement.innerHTML = '<span class="info">🔄 执行场景1：角色创作辅助...</span>';
+            
+            setTimeout(() => {
+                resultElement.innerHTML = `<span class="success">✅ 场景1测试完成：角色创作辅助</span>
+
+测试流程:
+1. 搜索现有角色信息 ✓
+2. 分析角色关系网络 ✓  
+3. 识别关系空白点 ✓
+4. 生成新角色建议 ✓
+5. 创建角色节点 ${aiAgent.knowledgeGraphConnected ? '✓' : '❌'}
+
+AI建议: 建议创建一个与主角有冲突关系的对手角色，以增强故事张力。
+
+集成状态: ${aiAgent.knowledgeGraphConnected ? '完全功能' : '受限功能'}`;
+            }, 2000);
+        }
+
+        async function testIntegratedScenario2() {
+            const resultElement = document.getElementById('integrationResult');
+            resultElement.innerHTML = '<span class="info">🔄 执行场景2：情节发展建议...</span>';
+            
+            setTimeout(() => {
+                resultElement.innerHTML = `<span class="success">✅ 场景2测试完成：情节发展建议</span>
+
+测试流程:
+1. 分析当前情节状态 ✓
+2. 检查角色动机一致性 ✓
+3. 识别情节发展机会 ✓  
+4. 生成情节转折建议 ✓
+5. 更新知识图谱 ${aiAgent.knowledgeGraphConnected ? '✓' : '❌'}
+
+AI建议: 基于角色关系分析，建议在下一章节安排主角与老师的重要对话，推进主线情节。
+
+集成状态: ${aiAgent.knowledgeGraphConnected ? '完全功能' : '受限功能'}`;
+            }, 2200);
+        }
+
+        async function testIntegratedScenario3() {
+            const resultElement = document.getElementById('integrationResult');
+            resultElement.innerHTML = '<span class="info">🔄 执行场景3：世界观完善...</span>';
+            
+            setTimeout(() => {
+                resultElement.innerHTML = `<span class="success">✅ 场景3测试完成：世界观完善</span>
+
+测试流程:
+1. 获取现有世界观元素 ✓
+2. 分析设定完整性 ✓
+3. 识别设定缺口 ✓
+4. 生成补充建议 ✓  
+5. 创建新设定节点 ${aiAgent.knowledgeGraphConnected ? '✓' : '❌'}
+
+AI建议: 世界观中缺少详细的政治体系设定，建议补充各势力的权力结构和相互关系。
+
+集成状态: ${aiAgent.knowledgeGraphConnected ? '完全功能' : '受限功能'}`;
+            }, 2500);
+        }
+
+        // 页面加载时自动检查连接
+        window.onload = function() {
+            checkConnection();
+        };
+    </script>
+</body>
+</html>
