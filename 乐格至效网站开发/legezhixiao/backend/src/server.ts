@@ -63,6 +63,7 @@ try {
 // 导入路由
 let authRoutes: any, userRoutes: any, projectRoutes: any, chapterRoutes: any;
 let aiRoutes: any, writingRoutes: any, writingStatsRoutes: any, logRoutes: any, uploadRoutes: any;
+let knowledgeGraphRoutes: any;
 
 try {
   console.log('导入路由模块...');
@@ -94,6 +95,9 @@ try {
   
   uploadRoutes = require(path.join(__dirname, 'routes', 'upload')).default;
   console.log('✅ upload routes 导入成功');
+  
+  knowledgeGraphRoutes = require(path.join(__dirname, 'routes', 'knowledgeGraph')).default;
+  console.log('✅ knowledge graph routes 导入成功');
   
   console.log('✅ 所有路由模块导入成功');
 } catch (error) {
@@ -226,6 +230,8 @@ app.use('/api/writing', writingRoutes);
 app.use('/api/stats', writingStatsRoutes);
 app.use('/api/logs', logRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/knowledge-graph', knowledgeGraphRoutes);
+console.log('✅ /api/knowledge-graph 路由已注册');
 
 // RxDB 同步路由
 startupStep('同步路由', () => {
@@ -331,15 +337,33 @@ process.on('SIGINT', async () => {
   });
 });
 
-// 未捕获异常处理
+// 未捕获异常处理 - 改进版本，避免因文件描述符问题导致退出
 process.on('uncaughtException', (error) => {
   logger.error('未捕获异常:', error);
+  
+  // 如果是文件描述符错误，记录但不退出
+  if ((error as any).code === 'EBADF' || error.message.includes('bad file descriptor')) {
+    logger.warn('忽略文件描述符错误，服务器继续运行');
+    return;
+  }
+  
+  // 其他严重错误才退出
+  logger.error('严重错误，服务器即将退出');
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
   logger.error('未处理的 Promise 拒绝:', reason);
   logger.error('Promise:', promise);
+  
+  // 对于某些可恢复的错误，只记录不退出
+  if (reason && typeof reason === 'object' && (reason as any).code === 'EBADF') {
+    logger.warn('忽略 Promise 中的文件描述符错误');
+    return;
+  }
+  
+  // 严重的 Promise 拒绝才退出
+  logger.error('严重的 Promise 拒绝，服务器即将退出');
   process.exit(1);
 });
 

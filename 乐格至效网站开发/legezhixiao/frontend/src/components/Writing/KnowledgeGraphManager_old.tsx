@@ -73,8 +73,8 @@ const KnowledgeGraphManager: React.FC<KnowledgeGraphManagerProps> = ({
   });
   const [loading, setLoading] = useState(true);
   const [graphData, setGraphData] = useState<GraphData | null>(null);
-  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
-  const [selectedRelationship, setSelectedRelationship] = useState<GraphRelationship | null>(null);
+  const [selectedNode, _setSelectedNode] = useState<GraphNode | null>(null);
+  const [selectedRelationship, _setSelectedRelationship] = useState<GraphRelationship | null>(null);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
   // 知识图谱服务 (使用ArangoDB后端API)

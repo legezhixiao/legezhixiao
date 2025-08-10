@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI助手功能测试</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 600;
+        }
+        .header p {
+            margin: 10px 0 0;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 30px;
+        }
+        .status {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-left: 5px solid #10b981;
+        }
+        .status h3 {
+            margin: 0 0 10px;
+            color: #059669;
+        }
+        .test-section {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        .test-section h3 {
+            margin: 0 0 15px;
+            color: #374151;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #374151;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        button {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 70, 229, 0.4);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .response {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            line-height: 1.6;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .loading {
+            color: #6b7280;
+            font-style: italic;
+        }
+        .error {
+            color: #dc2626;
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+        .success {
+            color: #059669;
+            background: #ecfdf5;
+            border-color: #a7f3d0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI助手功能测试</h1>
+            <p>测试前端AI服务是否正常工作</p>
+        </div>
+        
+        <div class="content">
+            <div class="status">
+                <h3>✅ 系统状态</h3>
+                <p>前端代理配置已修复，AI服务应该正常工作了</p>
+            </div>
+
+            <div class="test-section">
+                <h3>🔐 用户登录测试</h3>
+                <div class="input-group">
+                    <label for="email">邮箱:</label>
+                    <input type="email" id="email" value="admin@legezhixiao.com">
+                </div>
+                <div class="input-group">
+                    <label for="password">密码:</label>
+                    <input type="password" id="password" value="lekairong8888">
+                </div>
+                <button onclick="testLogin()" id="loginBtn">登录测试</button>
+                <div id="loginResponse" class="response" style="display:none;"></div>
+            </div>
+
+            <div class="test-section">
+                <h3>💬 AI聊天测试</h3>
+                <div class="input-group">
+                    <label for="message">消息内容:</label>
+                    <textarea id="message" placeholder="输入你想问AI助手的问题...">你好，请介绍一下你自己，并说明你能为小说创作者提供什么帮助？</textarea>
+                </div>
+                <button onclick="testAI()" id="aiBtn">发送消息</button>
+                <div id="aiResponse" class="response" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let accessToken = '';
+
+        async function testLogin() {
+            const loginBtn = document.getElementById('loginBtn');
+            const loginResponse = document.getElementById('loginResponse');
+            
+            loginBtn.disabled = true;
+            loginBtn.textContent = '登录中...';
+            loginResponse.style.display = 'block';
+            loginResponse.className = 'response loading';
+            loginResponse.textContent = '正在登录...';
+
+            try {
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    accessToken = data.data.accessToken;
+                    loginResponse.className = 'response success';
+                    loginResponse.textContent = `✅ 登录成功！\n用户: ${data.data.user.email}\n角色: ${data.data.user.role}\n令牌: ${accessToken.substring(0, 50)}...`;
+                } else {
+                    loginResponse.className = 'response error';
+                    loginResponse.textContent = `❌ 登录失败: ${data.message || response.statusText}`;
+                }
+            } catch (error) {
+                loginResponse.className = 'response error';
+                loginResponse.textContent = `❌ 登录出错: ${error.message}`;
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = '登录测试';
+            }
+        }
+
+        async function testAI() {
+            if (!accessToken) {
+                alert('请先登录获取访问令牌！');
+                return;
+            }
+
+            const aiBtn = document.getElementById('aiBtn');
+            const aiResponse = document.getElementById('aiResponse');
+            
+            aiBtn.disabled = true;
+            aiBtn.textContent = '发送中...';
+            aiResponse.style.display = 'block';
+            aiResponse.className = 'response loading';
+            aiResponse.textContent = 'AI正在思考...';
+
+            try {
+                const message = document.getElementById('message').value;
+
+                const response = await fetch('/api/ai/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        type: 'general'
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    aiResponse.className = 'response success';
+                    aiResponse.textContent = `✅ AI响应成功！\n\n${data.text}`;
+                } else {
+                    const error = await response.text();
+                    aiResponse.className = 'response error';
+                    aiResponse.textContent = `❌ AI请求失败 (${response.status}): ${error}`;
+                }
+            } catch (error) {
+                aiResponse.className = 'response error';
+                aiResponse.textContent = `❌ AI请求出错: ${error.message}`;
+            } finally {
+                aiBtn.disabled = false;
+                aiBtn.textContent = '发送消息';
+            }
+        }
+    </script>
+</body>
+</html>

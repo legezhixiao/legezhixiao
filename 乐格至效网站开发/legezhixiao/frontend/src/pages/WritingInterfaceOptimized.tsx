@@ -3,7 +3,6 @@ import {
   Layout, 
   Button, 
   Space, 
-  Spin, 
   message, 
   Tooltip, 
   Modal, 
@@ -14,6 +13,7 @@ import {
   FloatButton,
   Divider
 } from 'antd'
+import AIThinkingIndicator from '../components/AI/AIThinkingIndicator'
 import { 
   SaveOutlined, 
   RobotOutlined, 
@@ -638,29 +638,17 @@ const WritingInterfaceOptimized: React.FC = () => {
             margin: writingMode === 'focus' ? '0 auto' : '0',
             padding: writingMode === 'focus' ? '40px 20px' : '0'
           }}>
-            {isGenerating && (
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'rgba(255, 255, 255, 0.95)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 1000,
-              }}>
-                <Spin size="large" />
-                <Text style={{ marginTop: '16px', fontSize: '16px' }}>
-                  AI正在分析上下文并生成内容...
-                </Text>
-                <Text type="secondary" style={{ marginTop: '8px' }}>
-                  这可能需要几秒钟时间
-                </Text>
-              </div>
-            )}
+            <AIThinkingIndicator
+              visible={isGenerating}
+              position="top-right"
+              compact={true}
+              steps={[
+                '分析写作内容',
+                '生成相关材料',
+                '优化文字表达',
+                '完善内容结构'
+              ]}
+            />
             
             <Editor
               height="100%"

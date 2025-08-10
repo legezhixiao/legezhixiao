@@ -62,7 +62,7 @@ export interface GraphData {
  * 提供ArangoDB后端支持的知识图谱功能
  */
 export class KnowledgeGraphService {
-  private baseUrl = '/api/knowledge-graph';
+  private baseUrl = '/knowledge-graph';
 
   /**
    * 搜索节点

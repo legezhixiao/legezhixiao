@@ -196,12 +196,7 @@ export class ServiceFactoryTest {
       
       // 测试大纲生成
       console.log('测试大纲生成...');
-      const outline = await aiService.generateOutline({
-        title: '星际探险者',
-        genre: '科幻冒险',
-        length: 'medium',
-        themes: ['友谊', '成长', '探索']
-      });
+      const outline = await aiService.generateOutline('生成一个科幻冒险小说《星际探险者》的大纲，中等长度，主题包括友谊、成长、探索');
       console.log('生成的大纲:', outline);
       
       // 测试角色分析

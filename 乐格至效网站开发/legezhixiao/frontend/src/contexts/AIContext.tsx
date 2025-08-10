@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react'
 import { message } from 'antd'
 import { useAppStore } from '../store/appStore'
+import AIServiceManager from '../services/aiService'
 import type { AIConversation, AIMessage, ConversationContext } from '../types'
 
 interface AIContextType {
@@ -95,6 +96,29 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children }) => {
     }
   }, [currentConversation])
 
+  // 获取活跃上下文
+  const getActiveContext = useCallback((): ConversationContext => {
+    const context: ConversationContext = {}
+    
+    if (currentProjectId) {
+      const project = projects.find(p => p.id === currentProjectId)
+      if (project) {
+        context.projectSummary = project.title
+        context.activeCharacters = project.characters.map(c => c.name)
+        context.plotStage = `${project.currentWords}/${project.targetWords}字`
+        
+        if (currentChapterId) {
+          const chapter = project.chapters.find(c => c.id === currentChapterId)
+          if (chapter) {
+            context.currentChapter = chapter.title
+          }
+        }
+      }
+    }
+    
+    return context
+  }, [currentProjectId, currentChapterId, projects])
+
   // 发送消息
   const sendMessage = useCallback(async (content: string) => {
     if (!currentConversation) return
@@ -125,38 +149,43 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children }) => {
         prev.map(c => c.id === updatedConversation.id ? updatedConversation : c)
       )
 
-      // 这里应该调用实际的AI服务
-      // TODO: 替换为真实的API调用
-      setTimeout(() => {
-        const aiMessage: AIMessage = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: `根据你的${context.projectSummary ? '小说《' + context.projectSummary + '》' : '写作'}需求，我建议...`,
-          timestamp: new Date(),
-          metadata: {
-            relatedChapter: currentChapterId || undefined,
-            suggestedChanges: ['建议1', '建议2']
-          }
-        }
+      // 调用真实的AI服务
+      const aiService = AIServiceManager.getInstance()
+      const aiResponse = await aiService.generateResponse({
+        message: content,
+        context: context.projectSummary ? `当前小说: ${context.projectSummary}` : undefined,
+        type: 'general'
+      })
 
-        const finalConversation = {
-          ...updatedConversation,
-          messages: [...updatedConversation.messages, aiMessage],
-          updatedAt: new Date()
+      const aiMessage: AIMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: aiResponse.text,
+        timestamp: new Date(),
+        metadata: {
+          relatedChapter: currentChapterId || undefined,
+          suggestedChanges: [`置信度: ${aiResponse.confidence}`, `提供商: ${aiResponse.provider}`]
         }
+      }
 
-        setCurrentConversation(finalConversation)
-        setConversations(prev => 
-          prev.map(c => c.id === finalConversation.id ? finalConversation : c)
-        )
-        setIsGenerating(false)
-      }, 2000)
+      const finalConversation = {
+        ...updatedConversation,
+        messages: [...updatedConversation.messages, aiMessage],
+        updatedAt: new Date()
+      }
+
+      setCurrentConversation(finalConversation)
+      setConversations(prev => 
+        prev.map(c => c.id === finalConversation.id ? finalConversation : c)
+      )
+      setIsGenerating(false)
 
     } catch (error) {
+      console.error('AI响应失败:', error)
       message.error('AI响应失败，请重试')
       setIsGenerating(false)
     }
-  }, [currentConversation, currentChapterId])
+  }, [currentConversation, currentChapterId, getActiveContext])
 
   // 设置小说上下文
   const setProjectContext = useCallback((
@@ -234,29 +263,6 @@ export const AIProvider: React.FC<AIProviderProps> = ({ children }) => {
 
     prompt += '\n\n请基于以上信息为用户提供精准的写作建议。'
     return prompt
-  }, [currentProjectId, currentChapterId, projects])
-
-  // 获取活跃上下文
-  const getActiveContext = useCallback((): ConversationContext => {
-    const context: ConversationContext = {}
-    
-    if (currentProjectId) {
-      const project = projects.find(p => p.id === currentProjectId)
-      if (project) {
-        context.projectSummary = project.title
-        context.activeCharacters = project.characters.map(c => c.name)
-        context.plotStage = `${project.currentWords}/${project.targetWords}字`
-        
-        if (currentChapterId) {
-          const chapter = project.chapters.find(c => c.id === currentChapterId)
-          if (chapter) {
-            context.currentChapter = chapter.title
-          }
-        }
-      }
-    }
-    
-    return context
   }, [currentProjectId, currentChapterId, projects])
 
   const value: AIContextType = {

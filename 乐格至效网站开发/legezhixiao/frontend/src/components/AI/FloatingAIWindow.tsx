@@ -27,7 +27,6 @@ import {
     Avatar,
     List,
     Empty,
-    Spin,
     Badge
 } from 'antd'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
@@ -37,6 +36,7 @@ import { setupPresetConfig } from '../../services/presetConfig'
 import AIConfigModal from './AIConfigModal'
 import SessionHistoryModal from './SessionHistoryModal'
 import { useEditor } from '../../contexts/EditorContext'
+import AIThinkingIndicator from './AIThinkingIndicator'
 import './FloatingAIWindow.css'
 // 文件已清空
 const { Title, Text } = Typography
@@ -111,6 +111,7 @@ const FloatingAIWindow: React.FC<FloatingAIWindowProps> = ({
     const [showHistoryModal, setShowHistoryModal] = useState(false)
     const [copiedId, setCopiedId] = useState<string | null>(null)
     const [selectedType, setSelectedType] = useState<string>('general')
+    const [sessionsCount, setSessionsCount] = useState(0)
 
     // 快捷操作
     const quickActions: QuickAction[] = [
@@ -162,19 +163,33 @@ const FloatingAIWindow: React.FC<FloatingAIWindowProps> = ({
 
     // 小说检测和会话加载
     useEffect(() => {
-        // 检测当前小说ID（从URL路由获取或使用默认值）
-        const projectId = routeProjectId || 'default'
-        const projectTitle = routeProjectId ? `小说 ${routeProjectId}` : '通用会话'
-        
-        // 更新小说上下文
-        if (currentProjectId !== projectId) {
-            setCurrentProjectId(projectId)
-            setCurrentProjectTitle(projectTitle)
+        const loadProjectData = async () => {
+            // 检测当前小说ID（从URL路由获取或使用默认值）
+            const projectId = routeProjectId || 'default'
+            const projectTitle = routeProjectId ? `小说 ${routeProjectId}` : '通用会话'
             
-            // 加载该小说的会话历史
-            const projectMessages = sessionManager.getProjectMessages(projectId)
-            setChatMessages(projectMessages)
+            // 更新小说上下文
+            if (currentProjectId !== projectId) {
+                setCurrentProjectId(projectId)
+                setCurrentProjectTitle(projectTitle)
+                
+                // 加载该小说的会话历史
+                const projectMessages = await sessionManager.getProjectMessages(projectId)
+                // 转换消息格式
+                const chatMessages: ChatMessage[] = projectMessages.map(msg => ({
+                    id: msg.id,
+                    role: msg.type === 'user' ? 'user' : 'assistant',
+                    content: msg.content,
+                    timestamp: new Date(msg.timestamp),
+                    type: msg.type === 'user' ? 'user' : 'ai'
+                }));
+                setChatMessages(chatMessages)
+            }
+            
+            // 更新会话数量
+            await updateSessionsCount()
         }
+        loadProjectData()
     }, [routeProjectId, currentProjectId, sessionManager, setCurrentProjectId, setCurrentProjectTitle])
 
     // 当会话窗口可见时，确保加载当前小说的消息
@@ -187,7 +202,8 @@ const FloatingAIWindow: React.FC<FloatingAIWindowProps> = ({
                   id: msg.id,
                   role: msg.type === 'user' ? 'user' : 'assistant',
                   content: msg.content,
-                  timestamp: new Date(msg.timestamp)
+                  timestamp: new Date(msg.timestamp),
+                  type: msg.type === 'user' ? 'user' : 'ai'
                 }));
                 setChatMessages(chatMessages);
             };
@@ -195,10 +211,20 @@ const FloatingAIWindow: React.FC<FloatingAIWindowProps> = ({
         }
     }, [visible, currentProjectId, sessionManager])
 
+    // 更新会话数量
+    const updateSessionsCount = async () => {
+        try {
+            const sessions = await sessionManager.getSessionSummaries()
+            setSessionsCount(sessions.length)
+        } catch (error) {
+            console.error('获取会话数量失败:', error)
+            setSessionsCount(0)
+        }
+    }
+
     // 获取所有小说的会话数量
     const getAllSessionsCount = () => {
-        const sessions = sessionManager.getAllSessionSummaries()
-        return sessions.length
+        return sessionsCount
     }
 
     // 检测窗口是否超出屏幕边界
@@ -245,7 +271,7 @@ const FloatingAIWindow: React.FC<FloatingAIWindowProps> = ({
         
         // 清空当前小说的会话记录
         if (currentProjectId) {
-            sessionManager.clearProjectSession(currentProjectId)
+            sessionManager.deleteProjectSession(currentProjectId)
         }
         
         message.success('当前小说的对话已清空')
@@ -271,7 +297,10 @@ const FloatingAIWindow: React.FC<FloatingAIWindowProps> = ({
         }
         
         // 保存用户消息到会话管理器
-        sessionManager.addMessage(projectId, userMessage, projectTitle)
+        sessionManager.saveProjectMessage(projectId, {
+            ...userMessage,
+            role: 'user' as const
+        }, projectTitle)
         
         setChatMessages(prev => [userMessage, ...prev])
         const currentInput = userInput.trim()
@@ -317,7 +346,10 @@ const FloatingAIWindow: React.FC<FloatingAIWindowProps> = ({
             }
 
             // 保存AI消息到会话管理器
-            sessionManager.addMessage(projectId, aiMessage, projectTitle)
+            sessionManager.saveProjectMessage(projectId, {
+                ...aiMessage,
+                role: 'assistant' as const
+            }, projectTitle)
 
             setChatMessages(prev => [aiMessage, ...prev])
             
@@ -336,7 +368,10 @@ const FloatingAIWindow: React.FC<FloatingAIWindowProps> = ({
             }
             
             // 保存错误消息到会话管理器
-            sessionManager.addMessage(projectId, errorMessage, projectTitle)
+            sessionManager.saveProjectMessage(projectId, {
+                ...errorMessage,
+                role: 'assistant' as const
+            }, projectTitle)
             
             setChatMessages(prev => [errorMessage, ...prev])
         } finally {
@@ -723,21 +758,11 @@ const FloatingAIWindow: React.FC<FloatingAIWindowProps> = ({
                                 overflow: 'auto',
                                 padding: '8px'
                             }}>
-                                {isLoading && (
-                                    <div style={{ 
-                                        padding: '20px', 
-                                        textAlign: 'center',
-                                        background: 'white',
-                                        margin: '8px',
-                                        borderRadius: '12px',
-                                        border: '1px solid #f0f0f0'
-                                    }}>
-                                        <Spin size="small" />
-                                        <Text style={{ marginLeft: '8px', color: '#666' }}>AI正在思考...</Text>
-                                    </div>
-                                )}
-
-                                {chatMessages.length === 0 && !isLoading ? (
+                                <AIThinkingIndicator
+                                    visible={isLoading}
+                                    position="inline"
+                                    compact={true}
+                                />                                {chatMessages.length === 0 && !isLoading ? (
                                     <Empty
                                         image={Empty.PRESENTED_IMAGE_SIMPLE}
                                         description={

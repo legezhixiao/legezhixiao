@@ -1,13 +1,13 @@
 import { Request, Response } from 'express';
 import { logger } from '../utils/logger';
 
-// 扩展Request接口
+// 扩展Request接口，与全局类型定义保持一致
 interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
     email: string;
     username: string;
-    [key: string]: any;
+    role: string;
   };
 }
 

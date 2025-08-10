@@ -615,7 +615,7 @@ export class UnifiedAuthService {
     return { user };
   }
 
-  private async callLogoutAPI(token: string): Promise<void> {
+  private async callLogoutAPI(_token: string): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 
@@ -633,7 +633,7 @@ export class UnifiedAuthService {
     return { token };
   }
 
-  private async callUpdateProfileAPI(userId: string, updates: Partial<UserProfile>): Promise<{ user: UserProfile }> {
+  private async callUpdateProfileAPI(_userId: string, updates: Partial<UserProfile>): Promise<{ user: UserProfile }> {
     await new Promise(resolve => setTimeout(resolve, 500));
     
     if (!this.currentUser) {
@@ -644,20 +644,20 @@ export class UnifiedAuthService {
     return { user };
   }
 
-  private async callChangePasswordAPI(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+  private async callChangePasswordAPI(_userId: string, _currentPassword: string, _newPassword: string): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 500));
     // 模拟密码验证和更新
   }
 
-  private async callPasswordResetRequestAPI(email: string): Promise<void> {
+  private async callPasswordResetRequestAPI(_email: string): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 
-  private async callPasswordResetConfirmAPI(token: string, newPassword: string): Promise<void> {
+  private async callPasswordResetConfirmAPI(_token: string, _newPassword: string): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 
-  private async callEnableTwoFactorAPI(userId: string, method: string): Promise<{ twoFactorAuth: TwoFactorAuth }> {
+  private async callEnableTwoFactorAPI(_userId: string, method: string): Promise<{ twoFactorAuth: TwoFactorAuth }> {
     await new Promise(resolve => setTimeout(resolve, 500));
     
     const twoFactorAuth: TwoFactorAuth = {
@@ -669,16 +669,16 @@ export class UnifiedAuthService {
     return { twoFactorAuth };
   }
 
-  private async callDisableTwoFactorAPI(userId: string): Promise<void> {
+  private async callDisableTwoFactorAPI(_userId: string): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 
-  private async callVerifyTwoFactorAPI(userId: string, code: string): Promise<{ valid: boolean }> {
+  private async callVerifyTwoFactorAPI(_userId: string, code: string): Promise<{ valid: boolean }> {
     await new Promise(resolve => setTimeout(resolve, 500));
     return { valid: code === '123456' };
   }
 
-  private async callGetSubscriptionAPI(userId: string): Promise<{ subscription: SubscriptionInfo }> {
+  private async callGetSubscriptionAPI(_userId: string): Promise<{ subscription: SubscriptionInfo }> {
     await new Promise(resolve => setTimeout(resolve, 500));
     
     const subscription: SubscriptionInfo = {

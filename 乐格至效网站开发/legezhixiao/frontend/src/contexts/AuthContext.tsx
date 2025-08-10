@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
+import { message } from 'antd'
 import type { User, AuthState, LoginCredentials, RegisterData, ResetPasswordData } from '../types'
 import authService from '../services/authService'
 
@@ -90,6 +91,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 isLoading: false,
                 error: null
             })
+
+            // 显示成功消息
+            message.success(`欢迎回来，${user.username}！`)
         } catch (error) {
             setState(prev => ({
                 ...prev,

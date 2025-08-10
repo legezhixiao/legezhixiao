@@ -147,7 +147,7 @@ const KnowledgeGraphRelationshipEditor: React.FC<KnowledgeGraphRelationshipEdito
   };
 
   const getNodeDisplay = (nodeId: string) => {
-    const node = nodes.find(n => n.id === nodeId);
+    const node = (nodes || []).find(n => n.id === nodeId);
     if (!node) return nodeId;
     return `${node.name} (${node.type})`;
   };
@@ -156,7 +156,7 @@ const KnowledgeGraphRelationshipEditor: React.FC<KnowledgeGraphRelationshipEdito
   //   return nodes.filter(node => node.type === type);
   // }; // 预设类型筛选功能
 
-  const groupedNodes = nodes.reduce((acc, node) => {
+  const groupedNodes = (nodes || []).reduce((acc, node) => {
     if (!acc[node.type]) {
       acc[node.type] = [];
     }

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button, Input, Card, Typography, Space, Tooltip, message } from 'antd';
 import { RobotOutlined, SendOutlined, CloseOutlined, MinusOutlined } from '@ant-design/icons';
+import AIThinkingIndicator from './AIThinkingIndicator';
 import './FloatingAIWindow.css';
 
 const { TextArea } = Input;
@@ -257,11 +258,11 @@ const SimpleFloatingAI: React.FC<SimpleFloatingAIProps> = ({
                 </div>
               ))
             )}
-            {isLoading && (
-              <div style={{ textAlign: 'center', padding: 20 }}>
-                <Text type="secondary">AI正在思考...</Text>
-              </div>
-            )}
+            <AIThinkingIndicator
+              visible={isLoading}
+              position="inline"
+              compact={true}
+            />
             {/* 滚动锚点 */}
             <div ref={messagesEndRef} />
           </div>

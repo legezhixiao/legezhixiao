@@ -9,16 +9,16 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
 
-  const onFinish = async (values: { username: string; password: string }) => {
+  const onFinish = async (values: { email: string; password: string }) => {
     try {
       setLoading(true);
       await login({
-        username: values.username,
+        email: values.email,
         password: values.password
       });
       message.success('登录成功！');
     } catch (error) {
-      message.error('登录失败，请检查用户名和密码');
+      message.error('登录失败，请检查邮箱和密码');
     } finally {
       setLoading(false);
     }
@@ -29,7 +29,7 @@ const LoginPage: React.FC = () => {
     try {
       setLoading(true);
       await login({
-        username: 'demo',
+        email: 'demo@example.com',
         password: 'demo123'
       });
       message.success('演示登录成功！');
@@ -65,13 +65,16 @@ const LoginPage: React.FC = () => {
           size="large"
         >
           <Form.Item
-            label="用户名"
-            name="username"
-            rules={[{ required: true, message: '请输入用户名!' }]}
+            label="邮箱"
+            name="email"
+            rules={[
+              { required: true, message: '请输入邮箱!' },
+              { type: 'email', message: '请输入有效的邮箱地址!' }
+            ]}
           >
             <Input 
               prefix={<UserOutlined />} 
-              placeholder="请输入用户名" 
+              placeholder="请输入邮箱" 
             />
           </Form.Item>
 

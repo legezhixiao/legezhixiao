@@ -556,26 +556,6 @@ export class RealArangoDBService {
   }
 
   // 章节操作
-  async createChapter(chapter: Omit<ChapterDocument, '_key' | '_id' | '_rev'>): Promise<ChapterDocument> {
-    await this.connect();
-    if (!this.database) throw new Error('数据库未连接');
-
-    try {
-      const collection = this.database.collection('chapters');
-      const result = await collection.save({
-        ...chapter,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-
-      console.log('✅ 创建章节成功:', result._key);
-      return { ...chapter, _key: result._key, _id: result._id, _rev: result._rev } as ChapterDocument;
-    } catch (error) {
-      console.error('❌ 创建章节失败:', error);
-      throw error;
-    }
-  }
-
   async getChaptersByProjectId(projectId: string): Promise<ChapterDocument[]> {
     await this.connect();
     if (!this.database) throw new Error('数据库未连接');
@@ -741,6 +721,58 @@ export class RealArangoDBService {
       return projects;
     } catch (error: any) {
       console.error('❌ 获取用户项目失败:', error);
+      throw error;
+    }
+  }
+
+  // 为接口兼容性添加的方法
+  async getChapter(chapterId: string): Promise<any> {
+    return this.getChapterById(chapterId);
+  }
+
+  async getProjectChapters(projectId: string): Promise<any[]> {
+    return this.getChaptersByProjectId(projectId);
+  }
+
+  async deleteChapter(chapterId: string): Promise<void> {
+    await this.connect();
+    if (!this.database) throw new Error('数据库未连接');
+
+    try {
+      const collection = this.database.collection('chapters');
+      await collection.remove(chapterId);
+      console.log('✅ 删除章节成功:', chapterId);
+    } catch (error) {
+      console.error('❌ 删除章节失败:', error);
+      throw error;
+    }
+  }
+
+  // 重载createChapter方法以匹配接口
+  async createChapter(chapterIdOrData: string | Omit<ChapterDocument, '_key' | '_id' | '_rev'>, chapterData?: any): Promise<ChapterDocument> {
+    // 如果第一个参数是字符串，说明是新接口调用
+    if (typeof chapterIdOrData === 'string') {
+      const data = { ...chapterData, id: chapterIdOrData };
+      return this.createChapter(data);
+    }
+    
+    // 原始方法实现
+    await this.connect();
+    if (!this.database) throw new Error('数据库未连接');
+
+    try {
+      const collection = this.database.collection('chapters');
+      const chapter = chapterIdOrData;
+      const result = await collection.save({
+        ...chapter,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+
+      console.log('✅ 创建章节成功:', result._key);
+      return { ...chapter, _key: result._key, _id: result._id, _rev: result._rev } as ChapterDocument;
+    } catch (error) {
+      console.error('❌ 创建章节失败:', error);
       throw error;
     }
   }

@@ -1,5 +1,6 @@
 import express from 'express';
 import { AuthController } from '../controllers/authController';
+import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
 const authController = new AuthController();
@@ -12,6 +13,9 @@ router.post('/login', authController.login);
 
 // 用户登出
 router.post('/logout', authController.logout);
+
+// 获取用户资料 (需要认证)
+router.get('/profile', authenticateToken, authController.getProfile);
 
 // 刷新令牌
 router.post('/refresh', authController.refreshToken);

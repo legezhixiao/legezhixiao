@@ -32,7 +32,7 @@ import LoginPage from './pages/LoginPage';
 
 // 导入悬浮AI助手组件
 import FloatingAIButton from './components/AI/FloatingAIButton';
-import SimpleFloatingAI from './components/AI/SimpleFloatingAI';
+import FloatingAIWindow from './components/AI/FloatingAIWindow';
 
 // 应用主题配置
 const appTheme = {
@@ -133,9 +133,10 @@ const App: React.FC = () => {
                           isAIVisible={showFloatingAI}
                         />
                         
-                        <SimpleFloatingAI
+                        <FloatingAIWindow
                           visible={showFloatingAI}
                           onClose={() => setShowFloatingAI(false)}
+                          content=""
                           onSuggestionApply={handleApplySuggestion}
                         />
                       </ErrorBoundary>

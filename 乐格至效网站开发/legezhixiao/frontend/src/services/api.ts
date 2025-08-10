@@ -58,7 +58,9 @@ class ApiClient {
     const data = await response.json();
     
     if (!response.ok) {
-      throw new Error(data.message || `HTTP error! status: ${response.status}`);
+      // 处理后端返回的错误格式：{ success: false, message: "错误信息", error: {...} }
+      const errorMessage = data.message || data.error?.message || `HTTP error! status: ${response.status}`;
+      throw new Error(errorMessage);
     }
     
     return {

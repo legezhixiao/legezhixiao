@@ -81,7 +81,7 @@ const KnowledgeGraphVisualization: React.FC<KnowledgeGraphVisualizationProps> = 
   // 初始化可视化数据
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || nodes.length === 0) return;
+    if (!canvas || !nodes || nodes.length === 0 || !relationships) return;
 
     const width = canvas.width;
     const height = canvas.height;
@@ -110,7 +110,7 @@ const KnowledgeGraphVisualization: React.FC<KnowledgeGraphVisualizationProps> = 
     const nodeMap = new Map(visNodes.map(node => [node.id, node]));
 
     // 创建可视化连接
-    const visLinks: VisualizationLink[] = relationships
+    const visLinks: VisualizationLink[] = (relationships || [])
       .filter(rel => nodeMap.has(rel.startNodeId) && nodeMap.has(rel.endNodeId))
       .map(rel => ({
         id: rel.id,
@@ -330,7 +330,7 @@ const KnowledgeGraphVisualization: React.FC<KnowledgeGraphVisualizationProps> = 
     setVisualization(prev => ({ ...prev, nodes: updatedNodes }));
   };
 
-  const nodeTypes = ['all', ...new Set(nodes.map(n => n.type))];
+  const nodeTypes = ['all', ...new Set((nodes || []).map(n => n.type))];
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>

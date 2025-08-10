@@ -20,19 +20,10 @@ export default defineConfig({
         port: 5173,
         host: true, // 允许外部访问
         open: false, // 在Codespaces中不自动打开
-        strictPort: false,
+        strictPort: true, // 强制使用5173端口，如果被占用则报错而不是切换端口
         cors: true, // 显式启用 CORS
         proxy: {
-            '/api/ai': {
-                target: 'https://api.siliconflow.cn',
-                changeOrigin: true,
-                rewrite: (path) => path.replace(/^\/api\/ai/, ''),
-                configure: (proxy, options) => {
-                    proxy.on('proxyReq', (proxyReq, req, res) => {
-                        console.log('代理请求:', req.method, req.url)
-                    })
-                }
-            },
+            // 所有 /api 请求都代理到后端服务器
             '/api': {
                 target: 'http://localhost:3000',
                 changeOrigin: true,

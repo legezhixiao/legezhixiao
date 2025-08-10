@@ -13,6 +13,10 @@ export interface IAuthService {
   register(userData: any): Promise<any>;
   refreshToken(): Promise<any>;
   updatePreferences(preferences: any): Promise<any>; // 修改为与实际实现一致
+  // 添加缺少的方法
+  getCurrentUser(): any;
+  isAuthenticated(): boolean;
+  updateUserPreferences(preferences: any): Promise<any>; // 为兼容性添加别名
 }
 
 export interface IDatabaseService {
@@ -27,6 +31,12 @@ export interface IDatabaseService {
   updateProject(id: string, projectData: any): Promise<any>;
   deleteProject(id: string): Promise<boolean>;
   getUserProjects(userId: string): Promise<any[]>;
+  // 添加缺少的章节相关方法
+  createChapter(chapterId: string, chapterData: any): Promise<any>;
+  getChapter(chapterId: string): Promise<any>;
+  getProjectChapters(projectId: string): Promise<any[]>;
+  updateChapter(chapterId: string, chapterData: any): Promise<any>;
+  deleteChapter(chapterId: string): Promise<void>;
 }
 
 export interface IAIService {
@@ -84,3 +94,17 @@ export const serviceFactory = ServiceFactory.getInstance();
 export const authService = serviceFactory.getAuthService();
 export const databaseService = serviceFactory.getDatabaseService();
 export const aiService = serviceFactory.getAIService();
+
+// 导出旧的函数名（向后兼容）
+export const getAuthService = () => serviceFactory.getAuthService();
+export const getDatabaseService = () => serviceFactory.getDatabaseService();
+export const getAIService = () => serviceFactory.getAIService();
+export const getServiceConfigStatus = () => ({
+  auth: 'real',
+  database: 'real', 
+  ai: 'real',
+  // 为向后兼容添加
+  useMockAuth: false,
+  useMockDB: false,
+  useMockAI: false
+});

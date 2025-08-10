@@ -356,6 +356,11 @@ export class RealAuthService {
       throw error;
     }
   }
+
+  // 为兼容性添加别名方法
+  async updateUserPreferences(preferences: Partial<UserPreferences>): Promise<UserProfile> {
+    return this.updatePreferences(preferences);
+  }
 }
 
 // 创建真实认证服务实例

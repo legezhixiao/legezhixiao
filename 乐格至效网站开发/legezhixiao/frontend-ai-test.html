@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>前端AI测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-area { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        button { padding: 10px 20px; margin: 5px; }
+        textarea { width: 100%; height: 60px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>前端AI助手连接测试</h1>
+    
+    <div class="test-area">
+        <h3>步骤1: 测试基础连接</h3>
+        <button onclick="testConnection()">测试后端连接</button>
+        <div id="connectionResult"></div>
+    </div>
+
+    <div class="test-area">
+        <h3>步骤2: 模拟前端AI请求</h3>
+        <textarea id="testMessage" placeholder="输入测试消息...">你好，请帮我写一个故事开头</textarea>
+        <br>
+        <button onclick="testAIRequest()">发送AI请求</button>
+        <div id="aiResult"></div>
+    </div>
+
+    <div class="test-area">
+        <h3>步骤3: 测试AIServiceManager</h3>
+        <p>加载AIServiceManager并测试...</p>
+        <button onclick="testFrontendService()">测试前端AI服务</button>
+        <div id="frontendResult"></div>
+    </div>
+
+    <script>
+        async function testConnection() {
+            const resultDiv = document.getElementById('connectionResult');
+            resultDiv.innerHTML = '<div class="warning">正在测试连接...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/ai');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✅ 后端连接成功！<br>状态: ${data.status}<br>端点: ${JSON.stringify(data.endpoints)}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ 后端连接失败！状态码: ${response.status}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ 连接错误: ${error.message}<br>可能的原因：CORS问题、网络问题或后端未启动</div>`;
+            }
+        }
+
+        async function testAIRequest() {
+            const resultDiv = document.getElementById('aiResult');
+            const message = document.getElementById('testMessage').value;
+            
+            if (!message.trim()) {
+                resultDiv.innerHTML = '<div class="error">请输入测试消息</div>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<div class="warning">正在发送AI请求...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/ai/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        type: 'general'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✅ AI请求成功！<br><strong>AI回复:</strong><br>${data.text.substring(0, 200)}${data.text.length > 200 ? '...' : ''}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ AI请求失败！<br>错误: ${data.error || '未知错误'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ AI请求错误: ${error.message}</div>`;
+            }
+        }
+
+        async function testFrontendService() {
+            const resultDiv = document.getElementById('frontendResult');
+            resultDiv.innerHTML = '<div class="warning">正在测试前端AI服务...</div>';
+            
+            try {
+                // 模拟前端AIServiceManager的行为
+                const testRequest = {
+                    message: "测试前端服务连接",
+                    context: "",
+                    type: "general",
+                    maxTokens: 500
+                };
+                
+                // 直接调用后端API（模拟AIServiceManager的行为）
+                const response = await fetch('http://localhost:3000/api/ai/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(testRequest)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✅ 前端AI服务测试成功！<br>
+                        <strong>响应数据:</strong><br>
+                        ID: ${data.id}<br>
+                        类型: ${data.type}<br>
+                        置信度: ${data.confidence}<br>
+                        提供商: ${data.provider}<br>
+                        <strong>AI回复:</strong><br>
+                        ${data.text.substring(0, 300)}${data.text.length > 300 ? '...' : ''}
+                    </div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ 前端AI服务测试失败！<br>
+                        状态码: ${response.status}<br>
+                        错误: ${data.error || '未知错误'}
+                    </div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ 前端AI服务测试错误: ${error.message}<br>
+                    可能的原因：网络连接问题、CORS问题或前端代码错误
+                </div>`;
+            }
+        }
+
+        // 页面加载时自动测试基础连接
+        window.onload = function() {
+            testConnection();
+        };
+    </script>
+</body>
+</html>

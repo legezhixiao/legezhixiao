@@ -1,25 +1,37 @@
 #!/usr/bin/env node
 /**
  * 测试账号注入脚本
- * 创建admin@legezhixiao.com测试账号用于功能测试
+ * 创建test@legezhixiao.com测试账号用于功能测试
  */
 
 import bcrypt from 'bcryptjs';
-import { databaseAdapter } from '../src/config/databaseAdapter';
-import { dataService } from '../src/services/dataService';
+import { Database } from 'arangojs';
 import { logger } from '../src/utils/logger';
+
+// 直接创建数据库连接，确保使用正确的认证
+const createDBConnection = () => {
+  const db = new Database({
+    url: 'http://localhost:8529',
+    databaseName: 'novel_data',
+    auth: {
+      username: 'root',
+      password: 'lkr350702'
+    }
+  });
+  return db;
+};
 
 // 测试账号信息
 const TEST_USER = {
-  username: 'admin',
+  username: 'test',
   email: 'admin@legezhixiao.com',
   password: '88888888',
   role: 'admin',
   subscription: 'premium',
   profile: {
-    nickname: '管理员',
+    nickname: '测试用户',
     avatar: '',
-    bio: '系统管理员测试账号',
+    bio: '系统功能测试账号',
     location: '',
     website: '',
     github: '',

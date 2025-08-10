@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>前端AI助手连接测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .test-button:hover {
+            background: #005aa3;
+        }
+        .test-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .test-result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .loading {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .input-group input, .input-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .input-group textarea {
+            height: 80px;
+            resize: vertical;
+        }
+    </style>
+</head>
+<body>
+    <h1>🤖 前端AI助手连接测试</h1>
+    
+    <div class="test-container">
+        <h2>🔍 基础连接测试</h2>
+        <button class="test-button" onclick="testBasicConnection()">测试后端连接</button>
+        <button class="test-button" onclick="testHealthCheck()">健康检查</button>
+        <div id="basicResult" class="test-result"></div>
+    </div>
+    
+    <div class="test-container">
+        <h2>🧠 AI对话测试</h2>
+        <div class="input-group">
+            <label for="testMessage">测试消息:</label>
+            <textarea id="testMessage" placeholder="输入要发送给AI的消息...">请帮我写一个关于星空的短诗</textarea>
+        </div>
+        <div class="input-group">
+            <label for="messageType">消息类型:</label>
+            <select id="messageType">
+                <option value="general">通用</option>
+                <option value="continuation">续写</option>
+                <option value="improvement">改进</option>
+                <option value="correction">修正</option>
+            </select>
+        </div>
+        <button class="test-button" onclick="testAIChat()">发送AI消息</button>
+        <button class="test-button" onclick="testDirectAPI()">直接API测试</button>
+        <div id="aiResult" class="test-result"></div>
+    </div>
+    
+    <div class="test-container">
+        <h2>📱 前端服务测试</h2>
+        <button class="test-button" onclick="testFrontendAIService()">测试前端AI服务</button>
+        <button class="test-button" onclick="testFloatingWindow()">测试悬浮窗服务</button>
+        <div id="frontendResult" class="test-result"></div>
+    </div>
+
+    <script>
+        let isLoading = false;
+
+        function setLoading(elementId, loading) {
+            isLoading = loading;
+            const element = document.getElementById(elementId);
+            if (loading) {
+                element.className = 'test-result loading';
+                element.textContent = '🔄 正在测试...';
+            }
+            document.querySelectorAll('.test-button').forEach(btn => {
+                btn.disabled = loading;
+            });
+        }
+
+        function showResult(elementId, success, message) {
+            const element = document.getElementById(elementId);
+            element.className = `test-result ${success ? 'success' : 'error'}`;
+            element.textContent = message;
+            isLoading = false;
+            document.querySelectorAll('.test-button').forEach(btn => {
+                btn.disabled = false;
+            });
+        }
+
+        async function testBasicConnection() {
+            if (isLoading) return;
+            setLoading('basicResult', true);
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/ai');
+                const data = await response.json();
+                
+                showResult('basicResult', true, 
+                    `✅ 后端连接成功！\n` +
+                    `状态码: ${response.status}\n` +
+                    `响应: ${JSON.stringify(data, null, 2)}`
+                );
+            } catch (error) {
+                showResult('basicResult', false, 
+                    `❌ 后端连接失败！\n` +
+                    `错误: ${error.message}\n` +
+                    `检查后端是否在 http://localhost:3000 运行`
+                );
+            }
+        }
+
+        async function testHealthCheck() {
+            if (isLoading) return;
+            setLoading('basicResult', true);
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/ai/health');
+                const data = await response.json();
+                
+                showResult('basicResult', true, 
+                    `✅ 健康检查通过！\n` +
+                    `状态码: ${response.status}\n` +
+                    `服务状态: ${data.status}\n` +
+                    `响应时间: ${data.timestamp}\n` +
+                    `详细信息: ${JSON.stringify(data, null, 2)}`
+                );
+            } catch (error) {
+                showResult('basicResult', false, 
+                    `❌ 健康检查失败！\n` +
+                    `错误: ${error.message}`
+                );
+            }
+        }
+
+        async function testDirectAPI() {
+            if (isLoading) return;
+            setLoading('aiResult', true);
+            
+            const message = document.getElementById('testMessage').value;
+            const type = document.getElementById('messageType').value;
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch('http://localhost:3000/api/ai/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        type: type,
+                        maxTokens: 500
+                    })
+                });
+                
+                const data = await response.json();
+                const duration = Date.now() - startTime;
+                
+                showResult('aiResult', true, 
+                    `✅ AI API调用成功！\n` +
+                    `响应时间: ${duration}ms\n` +
+                    `AI类型: ${data.type}\n` +
+                    `AI回复: ${data.text}\n` +
+                    `置信度: ${data.confidence}\n` +
+                    `提供商: ${data.provider}\n` +
+                    `完整响应: ${JSON.stringify(data, null, 2)}`
+                );
+            } catch (error) {
+                showResult('aiResult', false, 
+                    `❌ AI API调用失败！\n` +
+                    `错误: ${error.message}\n` +
+                    `请检查后端AI服务是否正常运行`
+                );
+            }
+        }
+
+        async function testAIChat() {
+            if (isLoading) return;
+            setLoading('aiResult', true);
+            
+            const message = document.getElementById('testMessage').value;
+            const type = document.getElementById('messageType').value;
+            
+            // 模拟前端aiService的调用方式
+            try {
+                const startTime = Date.now();
+                
+                // 使用和前端相同的方式调用
+                const response = await fetch('http://localhost:3000/api/ai/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        type: type,
+                        maxTokens: 1000
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                const duration = Date.now() - startTime;
+                
+                showResult('aiResult', true, 
+                    `✅ 前端模拟AI调用成功！\n` +
+                    `响应时间: ${duration}ms\n` +
+                    `消息ID: ${data.id}\n` +
+                    `类型: ${data.type}\n` +
+                    `AI回复:\n${data.text}\n\n` +
+                    `置信度: ${data.confidence}\n` +
+                    `原因: ${data.reason}\n` +
+                    `提供商: ${data.provider}`
+                );
+            } catch (error) {
+                console.error('AI调用错误:', error);
+                showResult('aiResult', false, 
+                    `❌ 前端模拟AI调用失败！\n` +
+                    `错误类型: ${error.constructor.name}\n` +
+                    `错误消息: ${error.message}\n` +
+                    `请检查网络连接和后端服务状态`
+                );
+            }
+        }
+
+        async function testFrontendAIService() {
+            if (isLoading) return;
+            setLoading('frontendResult', true);
+            
+            try {
+                // 检查是否可以访问前端的AI服务模块
+                const testCode = `
+                    // 尝试加载前端AI服务
+                    if (window.location.origin === 'http://localhost:5173') {
+                        // 我们在前端环境中
+                        return 'FRONTEND_ENV';
+                    } else {
+                        // 在测试页面中，模拟前端调用
+                        return 'TEST_ENV';
+                    }
+                `;
+                
+                const env = eval(testCode);
+                
+                showResult('frontendResult', true, 
+                    `✅ 前端环境检测成功！\n` +
+                    `当前环境: ${env}\n` +
+                    `浏览器: ${navigator.userAgent}\n` +
+                    `当前页面: ${window.location.href}\n\n` +
+                    `建议: 请在前端应用 (http://localhost:5173) 中打开浏览器控制台，\n` +
+                    `运行以下代码测试AI助手:\n\n` +
+                    `// 测试前端AI服务\n` +
+                    `if (window.aiService) {\n` +
+                    `    window.aiService.generateResponse({\n` +
+                    `        message: "你好，AI助手！",\n` +
+                    `        type: "general"\n` +
+                    `    }).then(response => {\n` +
+                    `        console.log("AI回复:", response);\n` +
+                    `    }).catch(error => {\n` +
+                    `        console.error("AI调用失败:", error);\n` +
+                    `    });\n` +
+                    `} else {\n` +
+                    `    console.log("AI服务未加载");\n` +
+                    `}`
+                );
+            } catch (error) {
+                showResult('frontendResult', false, 
+                    `❌ 前端服务测试失败！\n` +
+                    `错误: ${error.message}`
+                );
+            }
+        }
+
+        async function testFloatingWindow() {
+            if (isLoading) return;
+            setLoading('frontendResult', true);
+            
+            try {
+                showResult('frontendResult', true, 
+                    `🔍 悬浮窗测试指南\n\n` +
+                    `1. 打开前端应用: http://localhost:5173\n` +
+                    `2. 查找AI助手悬浮窗 (通常在右下角)\n` +
+                    `3. 点击AI助手图标打开对话窗口\n` +
+                    `4. 发送测试消息: "你好，请帮我写一首诗"\n` +
+                    `5. 观察是否收到AI回复\n\n` +
+                    `如果看不到悬浮窗，请检查:\n` +
+                    `- 浏览器控制台是否有错误\n` +
+                    `- FloatingAIWindow组件是否正确渲染\n` +
+                    `- CSS样式是否正确加载\n\n` +
+                    `调试代码 (在前端控制台运行):\n` +
+                    `console.log("AI服务状态:", window.aiService ? "已加载" : "未加载");\n` +
+                    `document.querySelectorAll('[class*="floating"], [class*="ai"]').forEach(el => {\n` +
+                    `    console.log("发现AI相关元素:", el.className, el);\n` +
+                    `});`
+                );
+            } catch (error) {
+                showResult('frontendResult', false, 
+                    `❌ 悬浮窗测试失败！\n` +
+                    `错误: ${error.message}`
+                );
+            }
+        }
+
+        // 页面加载完成后自动测试基础连接
+        window.addEventListener('load', () => {
+            console.log('🚀 AI助手测试页面已加载');
+            console.log('📍 当前页面:', window.location.href);
+            console.log('🔗 后端地址:', 'http://localhost:3000');
+            console.log('🖥️ 前端地址:', 'http://localhost:5173');
+            
+            // 3秒后自动测试基础连接
+            setTimeout(testBasicConnection, 1000);
+        });
+    </script>
+</body>
+</html>

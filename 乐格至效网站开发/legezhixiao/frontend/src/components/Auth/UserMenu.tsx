@@ -52,6 +52,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ placement = 'bottomRight' }) => {
         if (user.avatar) {
             return <Avatar src={user.avatar} size="large" />
         }
+        const displayName = user.displayName || user.username || user.email;
         return (
             <Avatar
                 size="large"
@@ -62,7 +63,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ placement = 'bottomRight' }) => {
                     justifyContent: 'center'
                 }}
             >
-                {user.displayName.charAt(0).toUpperCase()}
+                {displayName.charAt(0).toUpperCase()}
             </Avatar>
         )
     }
@@ -87,7 +88,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ placement = 'bottomRight' }) => {
             label: (
                 <Space>
                     <div>
-                        <div style={{ fontWeight: 500 }}>{user.displayName}</div>
+                        <div style={{ fontWeight: 500 }}>{user.displayName || user.username}</div>
                         <Text type="secondary" style={{ fontSize: '12px' }}>
                             @{user.username}
                         </Text>
@@ -114,7 +115,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ placement = 'bottomRight' }) => {
                 <div>
                     <div>创作统计</div>
                     <Text type="secondary" style={{ fontSize: '12px' }}>
-                        {user.profile.writingStats.totalWords.toLocaleString()} 字 · {user.profile.writingStats.totalProjects} 小说
+                        {user.profile?.writingStats?.totalWords?.toLocaleString() || 0} 字 · {user.profile?.writingStats?.totalProjects || 0} 小说
                     </Text>
                 </div>
             )

@@ -154,13 +154,42 @@ export class AuthController {
         message: '登录成功',
         data: {
           user: {
-            id: user.id,
+            id: user._key,
             username: user.username,
             email: user.email,
-            displayName: user.displayName,
-            role: user.role,
-            avatar: user.avatar,
-            isEmailVerified: user.isEmailVerified
+            displayName: user.displayName || user.username,
+            role: user.role || 'user',
+            avatar: user.avatar || null,
+            subscription: user.subscription || 'free',
+            isEmailVerified: user.isEmailVerified || false,
+            createdAt: user.createdAt,
+            lastLoginAt: user.lastLoginAt,
+            preferences: user.preferences || {
+              theme: 'dark',
+              language: 'zh-CN',
+              notifications: {
+                email: true,
+                push: true,
+                updates: true
+              },
+              privacy: {
+                showEmail: false,
+                showProfile: true
+              }
+            },
+            profile: {
+              bio: user.profile?.bio || '',
+              nickname: user.profile?.nickname || user.username,
+              writingStats: user.profile?.writingStats || {
+                totalWords: 0,
+                totalProjects: 0,
+                publishedProjects: 0,
+                averageWritingTime: 0,
+                dailyGoal: 0,
+                streakDays: 0
+              },
+              ...user.profile
+            }
           },
           ...tokens
         }
@@ -194,7 +223,7 @@ export class AuthController {
   }
 
   // 令牌验证
-  public verifyToken = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  public verifyToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const response: ApiResponse = {
         success: true,
@@ -229,6 +258,75 @@ export class AuthController {
 
   public verifyEmail = async (req: Request, res: Response) => {
     res.json({ success: true, message: '邮箱验证功能待实现' });
+  };
+
+  // 获取用户资料
+  public getProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.user || !req.user.id) {
+        throw new AppError('未授权访问', 401);
+      }
+
+      // 查找用户
+      const users = await dataService.query(
+        'FOR user IN users FILTER user._key == @userId LIMIT 1 RETURN user',
+        { userId: req.user.id }
+      );
+
+      if (users.length === 0) {
+        throw new AppError('用户不存在', 404);
+      }
+
+      const user = users[0];
+
+      const response: ApiResponse = {
+        success: true,
+        message: '获取用户资料成功',
+        data: {
+          id: user._key,
+          username: user.username,
+          email: user.email,
+          displayName: user.displayName || user.username,
+          role: user.role || 'user',
+          avatar: user.avatar || null,
+          subscription: user.subscription || 'free',
+          isEmailVerified: user.isEmailVerified || false,
+          createdAt: user.createdAt,
+          lastLoginAt: user.lastLoginAt,
+          preferences: user.preferences || {
+            theme: 'dark',
+            language: 'zh-CN',
+            notifications: {
+              email: true,
+              push: true,
+              updates: true
+            },
+            privacy: {
+              showEmail: false,
+              showProfile: true
+            }
+          },
+          profile: {
+            bio: user.profile?.bio || '',
+            nickname: user.profile?.nickname || user.username,
+            writingStats: user.profile?.writingStats || {
+              totalWords: 0,
+              totalProjects: 0,
+              publishedProjects: 0,
+              averageWritingTime: 0,
+              dailyGoal: 0,
+              streakDays: 0
+            },
+            ...user.profile
+          }
+        }
+      };
+
+      res.json(response.data);
+
+    } catch (error) {
+      next(error);
+    }
   };
 }
 

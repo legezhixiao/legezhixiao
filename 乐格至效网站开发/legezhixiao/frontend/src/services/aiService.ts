@@ -1,5 +1,3 @@
-import axios from 'axios'
-
 // 临时直接使用API密钥，确保功能正常
 const SILICONFLOW_API_KEY = 'sk-mjithqmjwccqgffouexthbavtnvftwkqjludpcxhrmeztcib'
 
@@ -72,93 +70,38 @@ class AIService {
         }]
     }
 
-    // 构建针对不同类型请求的提示词
-    private buildPrompt(request: AIRequest): string {
-        const { message, context, type = 'general' } = request
-
-        let prompt = ''
-
-        switch (type) {
-            case 'continuation':
-                prompt = `当前小说内容：\n${context || ''}\n\n用户请求：${message}\n\n请为这段小说内容提供续写建议，要求：
-1. 保持情节连贯性和人物一致性
-2. 提供2-3个可能的发展方向
-3. 每个建议100-200字
-4. 保持原有的写作风格`
-                break
-
-            case 'improvement':
-                prompt = `需要改进的文本：\n${context || ''}\n\n用户请求：${message}\n\n请分析这段文本并提供改进建议，包括：
-1. 写作技巧方面的建议
-2. 情节结构的优化
-3. 人物描写的改进
-4. 语言表达的提升`
-                break
-
-            case 'correction':
-                prompt = `需要修正的文本：\n${context || ''}\n\n用户请求：${message}\n\n请检查这段文本并提供修正建议，重点关注：
-1. 语法错误
-2. 逻辑漏洞
-3. 情节矛盾
-4. 表达不清的地方`
-                break
-
-            default:
-                prompt = `用户请求：${message}\n\n${context ? `相关内容：\n${context}\n\n` : ''}请提供专业的小说创作建议和指导。`
-                break
-        }
-
-        return prompt
-    }
-
-    // 调用AI API
+    // 调用AI API - 使用本地后端API
     async generateResponse(request: AIRequest): Promise<AIResponse> {
         try {
-            const provider = AI_SERVICE_CONFIG.providers[this.config.provider]
+            console.log('🔗 准备调用后端AI API:')
+            console.log('- 请求类型:', request.type)
+            console.log('- 消息内容:', request.message.substring(0, 50) + '...')
             
-            if (!provider) {
-                throw new Error(`不支持的AI服务提供商: ${this.config.provider}`)
+            // 调用本地后端API，自动包含认证头
+            const response = await fetch('/api/ai/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('access_token') || sessionStorage.getItem('access_token') || ''}`
+                },
+                body: JSON.stringify({
+                    message: request.message,
+                    context: request.context,
+                    type: request.type || 'general',
+                    maxTokens: request.maxTokens || 1000
+                })
+            })
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`)
             }
+            
+            const aiResponse: AIResponse = await response.json()
+            console.log('✅ 后端API请求成功，响应长度:', aiResponse.text.length)
 
-            const prompt = this.buildPrompt(request)
-            
-            // 构建请求消息
-            const messages: AIMessage[] = [
-                ...this.conversationHistory,
-                { role: 'user', content: prompt }
-            ]
-
-            // 根据不同的提供商构建请求
-            const requestData = this.buildRequestData(provider, messages, request)
-            
-            console.log('🔗 准备发送API请求:')
-            console.log('- API URL:', this.config.customApiUrl || provider.apiUrl)
-            console.log('- 模型:', this.config.model)
-            console.log('- 密钥状态:', this.config.apiKey ? `sk-***${this.config.apiKey.slice(-4)}` : '未设置')
-            console.log('- 请求数据:', requestData)
-            
-            // 发送请求
-            const response = await axios.post(
-                this.config.customApiUrl || provider.apiUrl,
-                requestData,
-                {
-                    headers: {
-                        ...provider.headers(this.config.apiKey || ''),
-                        'Accept': 'application/json'
-                    },
-                    timeout: 30000,
-                    withCredentials: false  // 避免CORS问题
-                }
-            )
-            
-            console.log('✅ API请求成功，状态码:', response.status)
-
-            // 解析响应
-            const aiResponse = this.parseResponse(response.data, request.type || 'general')
-            
-            // 更新对话历史
+            // 更新对话历史（用于前端显示）
             this.conversationHistory.push(
-                { role: 'user', content: prompt },
+                { role: 'user', content: request.message },
                 { role: 'assistant', content: aiResponse.text }
             )
 
@@ -173,82 +116,19 @@ class AIService {
             return aiResponse
 
         } catch (error: any) {
-            console.error('❌ AI API调用失败:')
+            console.error('❌ 后端AI API调用失败:')
             console.error('- 错误类型:', error.constructor.name)
             console.error('- 错误消息:', error.message)
-            
-            if (error.response) {
-                console.error('- HTTP状态码:', error.response.status)
-                console.error('- 响应数据:', error.response.data)
-                console.error('- 响应头:', error.response.headers)
-            } else if (error.request) {
-                console.error('- 请求配置:', error.config)
-                console.error('- 没有收到响应')
-            }
             
             // 返回错误响应
             return {
                 id: Date.now().toString(),
                 type: request.type || 'general',
-                text: '抱歉，AI服务暂时不可用。请检查网络连接或API配置，稍后再试。',
+                text: '抱歉，AI服务暂时不可用。请检查网络连接或稍后再试。\n\n错误详情: ' + error.message,
                 confidence: 0,
                 reason: `服务错误: ${error.message}`,
-                provider: this.config.provider
+                provider: 'backend'
             }
-        }
-    }
-
-    // 构建不同提供商的请求数据
-    private buildRequestData(provider: any, messages: AIMessage[], request: AIRequest) {
-        const baseData = {
-            model: this.config.model || provider.model,
-            messages: messages,
-            max_tokens: request.maxTokens || 1000,
-            temperature: 0.7
-        }
-
-        // SiliconFlow 使用OpenAI兼容格式
-        return baseData
-    }
-
-    // 解析AI响应
-    private parseResponse(data: any, type: string): AIResponse {
-        let content = ''
-        
-        try {
-            // SiliconFlow 使用OpenAI兼容格式
-            content = data.choices?.[0]?.message?.content || ''
-        } catch (error) {
-            console.error('解析AI响应失败:', error)
-            content = '解析响应失败'
-        }
-
-        return {
-            id: Date.now().toString(),
-            type: type as any,
-            text: content.trim() || '暂无建议',
-            confidence: this.calculateConfidence(content),
-            reason: this.getReasonByType(type),
-            provider: this.config.provider
-        }
-    }
-
-    // 计算置信度（简单实现）
-    private calculateConfidence(content: string): number {
-        const length = content.length
-        if (length > 200) return 0.9
-        if (length > 100) return 0.8
-        if (length > 50) return 0.7
-        return 0.6
-    }
-
-    // 根据类型获取原因说明
-    private getReasonByType(type: string): string {
-        switch (type) {
-            case 'continuation': return '续写建议'
-            case 'improvement': return '改进建议'
-            case 'correction': return '修正建议'
-            default: return 'AI建议'
         }
     }
 

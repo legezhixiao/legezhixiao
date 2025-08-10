@@ -9,6 +9,7 @@ import { Character } from '../types';
 export interface AIAgentExecutedAction {
   id: string;
   type: string;
+  actionType: string; // 为兼容性添加actionType字段
   timestamp: Date;
   result: any;
   success?: boolean;
@@ -33,6 +34,8 @@ export interface AIAgentResponse {
   message: string;
   data?: any;
   suggestions?: string[];
+  context?: AIAgentContext; // 为兼容性添加
+  actions?: AIAgentExecutedAction[]; // 为兼容性添加
 }
 
 export interface ProjectAnalysis {
@@ -49,12 +52,32 @@ export interface ProjectAnalysis {
   summary: string;
 }
 
+export interface AIAgentContext {
+  projectId?: string;
+  chapterId?: string;
+  currentText?: string;
+  characters?: Character[];
+  plotContext?: string;
+  userPreferences?: any;
+  sessionId?: string;
+  lastAction?: string;
+  actionHistory?: AIAgentExecutedAction[];
+  metadata?: any;
+  // 为useAIAgent兼容性添加的字段
+  currentProject?: any;
+  currentChapter?: any;
+  currentCharacters?: Character[];
+  userInput?: string;
+  conversationHistory?: any[];
+}
+
 /**
  * 真实AI代理服务类
  */
 class AIAgentService {
   private static instance: AIAgentService;
   private eventListeners: Map<string, Function[]> = new Map();
+  private context: AIAgentContext = {};
 
   private constructor() {}
 
@@ -63,6 +86,115 @@ class AIAgentService {
       AIAgentService.instance = new AIAgentService();
     }
     return AIAgentService.instance;
+  }
+
+  /**
+   * 获取当前上下文
+   */
+  public getContext(): AIAgentContext {
+    return { ...this.context };
+  }
+
+  /**
+   * 更新上下文
+   */
+  public updateContext(updates: Partial<AIAgentContext>): void {
+    this.context = { ...this.context, ...updates };
+  }
+
+  /**
+   * 清空上下文
+   */
+  public clearContext(): void {
+    this.context = {};
+  }
+
+  /**
+   * 获取可用操作列表
+   */
+  public getAvailableActions(): string[] {
+    return [
+      'generate_content',
+      'generate_outline', 
+      'analyze_character',
+      'generate_dialogue',
+      'improve_text',
+      'get_suggestions',
+      'analyze_project'
+    ];
+  }
+
+  /**
+   * 执行特定操作
+   */
+  public async executeAction(actionType: string, params: any): Promise<any> {
+    console.log(`🎯 执行操作: ${actionType}`, params);
+    
+    try {
+      let result;
+      
+      switch (actionType) {
+        case 'generate_content':
+          result = await this.generateContent(params.prompt, params.options);
+          break;
+        case 'generate_outline':
+          result = await this.generateOutline(params.prompt, params.options);
+          break;
+        case 'analyze_character':
+          result = await this.analyzeCharacter(params.character);
+          break;
+        case 'generate_dialogue':
+          result = await this.generateDialogue(params.context);
+          break;
+        case 'improve_text':
+          result = await this.improveText(params.text, params.options);
+          break;
+        case 'get_suggestions':
+          const suggestions = await this.getWritingSuggestions(params.context);
+          result = { success: true, data: { suggestions } };
+          break;
+        case 'analyze_project':
+          const analysis = await this.analyzeProject(params.projectId);
+          result = { success: true, data: { analysis } };
+          break;
+        default:
+          throw new Error(`未知的操作类型: ${actionType}`);
+      }
+
+      // 记录执行的操作
+      const executedAction: AIAgentExecutedAction = {
+        id: Date.now().toString(),
+        type: actionType,
+        actionType: actionType, // 为兼容性添加
+        timestamp: new Date(),
+        result,
+        success: result.success !== false
+      };
+
+      // 更新上下文中的操作历史
+      this.updateContext({
+        lastAction: actionType,
+        actionHistory: [...(this.context.actionHistory || []), executedAction]
+      });
+
+      this.emit('actionExecuted', executedAction);
+      
+      return result;
+    } catch (error) {
+      console.error(`执行操作失败: ${actionType}`, error);
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      const failedAction: AIAgentExecutedAction = {
+        id: Date.now().toString(),
+        type: actionType,
+        actionType: actionType, // 为兼容性添加
+        timestamp: new Date(),
+        result: { success: false, message: errorMessage },
+        success: false
+      };
+      
+      this.emit('actionExecuted', failedAction);
+      throw error;
+    }
   }
 
   /**

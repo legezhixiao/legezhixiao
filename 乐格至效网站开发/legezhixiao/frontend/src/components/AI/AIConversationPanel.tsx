@@ -18,6 +18,7 @@ import {
   Modal,
   message
 } from 'antd'
+import AIThinkingIndicator from './AIThinkingIndicator'
 import {
   SendOutlined,
   UserOutlined,
@@ -382,11 +383,11 @@ const AIConversationPanel: React.FC<AIConversationPanelProps> = ({
               image={<RobotOutlined style={{ fontSize: 48, color: '#d9d9d9' }} />}
             />
           )}
-          {isGenerating && (
-            <div style={{ textAlign: 'center', padding: 16 }}>
-              <Text type="secondary">AI正在思考中...</Text>
-            </div>
-          )}
+          <AIThinkingIndicator
+            visible={isGenerating}
+            position="inline"
+            compact={true}
+          />
           <div ref={messagesEndRef} />
         </div>
 

@@ -36,6 +36,7 @@ module.exports = {
       cwd: '/workspaces/legezhixiao/乐格至效网站开发/legezhixiao/frontend',
       env: {
         NODE_ENV: 'development',
+        PORT: '5173',
         VITE_PORT: '5173',
         VITE_HOST: '0.0.0.0'
       },

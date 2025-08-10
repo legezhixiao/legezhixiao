@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI助手测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-container {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+        .input-group {
+            margin: 10px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #1890ff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #40a9ff;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .response {
+            background-color: #f6f8fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+        }
+        .error {
+            color: red;
+            background-color: #fff2f0;
+            border-left: 4px solid #ff4d4f;
+        }
+        .success {
+            color: green;
+            background-color: #f6ffed;
+            border-left: 4px solid #52c41a;
+        }
+    </style>
+</head>
+<body>
+    <h1>AI助手后端API测试</h1>
+    
+    <div class="test-container">
+        <h2>1. 基础连接测试</h2>
+        <button onclick="testBasicConnection()">测试基础连接</button>
+        <div id="basicResult"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>2. AI聊天测试</h2>
+        <div class="input-group">
+            <label for="message">消息内容:</label>
+            <textarea id="message" rows="3" placeholder="请输入您的问题...">请帮我写一个科幻小说的开头</textarea>
+        </div>
+        <div class="input-group">
+            <label for="type">消息类型:</label>
+            <select id="type">
+                <option value="general">通用</option>
+                <option value="continuation">续写</option>
+                <option value="improvement">改进</option>
+                <option value="correction">修正</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="context">上下文(可选):</label>
+            <textarea id="context" rows="2" placeholder="相关内容或上下文..."></textarea>
+        </div>
+        <button onclick="testAIChat()" id="chatButton">发送AI聊天请求</button>
+        <div id="chatResult"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>3. 健康检查</h2>
+        <button onclick="testHealthCheck()">检查AI服务健康状态</button>
+        <div id="healthResult"></div>
+    </div>
+
+    <script>
+        async function testBasicConnection() {
+            const resultDiv = document.getElementById('basicResult');
+            resultDiv.innerHTML = '正在测试基础连接...';
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/ai');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="response success">✅ 连接成功！
+状态: ${data.status}
+可用端点: ${JSON.stringify(data.endpoints, null, 2)}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="response error">❌ 连接失败！HTTP ${response.status}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="response error">❌ 连接错误: ${error.message}</div>`;
+            }
+        }
+
+        async function testAIChat() {
+            const resultDiv = document.getElementById('chatResult');
+            const button = document.getElementById('chatButton');
+            const message = document.getElementById('message').value;
+            const type = document.getElementById('type').value;
+            const context = document.getElementById('context').value;
+            
+            if (!message.trim()) {
+                alert('请输入消息内容');
+                return;
+            }
+            
+            button.disabled = true;
+            button.textContent = '发送中...';
+            resultDiv.innerHTML = '正在发送AI聊天请求...';
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/ai/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        type: type,
+                        context: context || undefined
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="response success">✅ AI响应成功！
+ID: ${data.id}
+类型: ${data.type}
+置信度: ${data.confidence}
+原因: ${data.reason}
+提供商: ${data.provider}
+
+AI回复:
+${data.text}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="response error">❌ AI请求失败！
+错误: ${data.error || 'Unknown error'}
+代码: ${data.code || 'Unknown code'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="response error">❌ 请求错误: ${error.message}</div>`;
+            } finally {
+                button.disabled = false;
+                button.textContent = '发送AI聊天请求';
+            }
+        }
+
+        async function testHealthCheck() {
+            const resultDiv = document.getElementById('healthResult');
+            resultDiv.innerHTML = '正在检查健康状态...';
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/ai/health');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="response success">✅ 健康检查成功！
+状态: ${data.status}
+提供商: ${data.provider}
+模型: ${data.model}
+时间戳: ${data.timestamp}
+响应时间: ${data.response_time}ms
+测试响应: ${data.test_response}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="response error">❌ 健康检查失败！
+状态: ${data.status}
+错误: ${data.error}
+错误代码: ${data.error_code}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="response error">❌ 健康检查错误: ${error.message}</div>`;
+            }
+        }
+
+        // 页面加载时自动测试基础连接
+        window.onload = function() {
+            testBasicConnection();
+        };
+    </script>
+</body>
+</html>

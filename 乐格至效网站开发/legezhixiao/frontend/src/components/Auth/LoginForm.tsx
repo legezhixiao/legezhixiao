@@ -128,16 +128,16 @@ const LoginForm: React.FC<LoginFormProps> = ({
                 </Space>
             </div>
 
-            {/* 演示账户提示 */}
+            /* 演示账户提示 */
             <div className="demo-accounts" style={{ marginTop: 24, padding: 16, backgroundColor: '#f6f6f6', borderRadius: 8 }}>
                 <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: 8 }}>
-                    演示账户：
+                    测试账户：
                 </Text>
                 <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>
-                    管理员：admin@legezhixiao.com
+                    邮箱：admin@legezhixiao.com
                 </Text>
                 <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>
-                    密码：任意密码（演示模式）
+                    密码：lekairong8888
                 </Text>
             </div>
         </div>

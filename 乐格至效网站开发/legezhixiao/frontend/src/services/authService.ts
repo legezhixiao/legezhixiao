@@ -76,17 +76,19 @@ class AuthService {
         try {
             const response = await api.post(`${API_BASE_URL}/login`, credentials)
             
-            const { user, token } = response.data
+            // 后端返回格式：{ success: true, data: { user, accessToken, refreshToken } }
+            const { user, accessToken } = response.data.data
             
             // 存储认证信息
             if (credentials.rememberMe) {
-                // localStorage.setItem(ACCESS_TOKEN_KEY, token)
+                localStorage.setItem(ACCESS_TOKEN_KEY, accessToken)
+                localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user))
             } else {
-                sessionStorage.setItem(ACCESS_TOKEN_KEY, token)
+                sessionStorage.setItem(ACCESS_TOKEN_KEY, accessToken)
+                sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user))
             }
-            // localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user))
             
-            return { user, token }
+            return { user, token: accessToken }
         } catch (error) {
             console.error('登录失败:', error)
             throw error
@@ -114,7 +116,7 @@ class AuthService {
 
     // 获取当前用户
     getCurrentUser(): User | null {
-        const userStr = sessionStorage.getItem(CURRENT_USER_KEY)
+        const userStr = localStorage.getItem(CURRENT_USER_KEY) || sessionStorage.getItem(CURRENT_USER_KEY)
         if (userStr) {
             try {
                 const user = JSON.parse(userStr)
@@ -132,7 +134,7 @@ class AuthService {
 
     // 检查认证状态
     isAuthenticated(): boolean {
-        const token = sessionStorage.getItem(ACCESS_TOKEN_KEY)
+        const token = localStorage.getItem(ACCESS_TOKEN_KEY) || sessionStorage.getItem(ACCESS_TOKEN_KEY)
         return token !== null && this.isTokenValid(token)
     }
 

@@ -164,10 +164,7 @@ export const ServiceFactoryDemo: React.FC = () => {
       const generatedText = await aiService.generateText('写一个简短的故事开头');
       
       // 测试大纲生成
-      const outline = await aiService.generateOutline({
-        title: '演示小说',
-        genre: '科幻'
-      });
+      const outline = await aiService.generateOutline('生成一个科幻小说《演示小说》的大纲');
       
       setTestResults((prev: Record<string, any>) => ({
         ...prev,

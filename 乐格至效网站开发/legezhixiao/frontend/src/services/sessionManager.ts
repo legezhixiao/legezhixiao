@@ -349,6 +349,63 @@ class SessionManager {
   }
 
   /**
+   * 保存项目消息
+   */
+  public async saveProjectMessage(projectId: string, message: {
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: Date;
+    type?: 'user' | 'ai';
+  }, projectTitle?: string): Promise<void> {
+    try {
+      console.log('💾 保存项目消息:', projectId, message.role);
+      
+      // 获取现有消息
+      const existingMessages = await this.getProjectMessages(projectId);
+      
+      // 转换为ProjectMessage格式
+      const projectMessage: ProjectMessage = {
+        id: message.id,
+        projectId,
+        userId: this.currentSession?.userId || 'anonymous',
+        type: message.role === 'user' ? 'user' : 'ai',
+        content: message.content,
+        timestamp: message.timestamp.toISOString(),
+        metadata: {
+          createdAt: message.timestamp.toISOString(),
+          updatedAt: message.timestamp.toISOString()
+        }
+      };
+      
+      // 添加新消息
+      const updatedMessages = [...existingMessages, projectMessage];
+      
+      // 保存到本地存储
+      localStorage.setItem(`messages_${projectId}`, JSON.stringify(updatedMessages));
+      
+      // 更新会话摘要
+      const sessionSummary: SessionSummary = {
+        projectId,
+        projectTitle: projectTitle || `项目 ${projectId}`,
+        messageCount: updatedMessages.length,
+        lastActivity: new Date().toISOString(),
+        createdAt: existingMessages.length === 0 ? new Date().toISOString() : 
+                   JSON.parse(localStorage.getItem(`sessions_${projectId}`) || '{}').createdAt || new Date().toISOString(),
+        lastMessage: message.content.substring(0, 100),
+        lastUpdated: new Date().toISOString()
+      };
+      
+      localStorage.setItem(`sessions_${projectId}`, JSON.stringify(sessionSummary));
+      
+      console.log('✅ 项目消息保存成功');
+    } catch (error) {
+      console.error('❌ 保存项目消息失败:', error);
+      throw error;
+    }
+  }
+
+  /**
    * 获取项目统计信息
    */
   public async getProjectStats(projectId: string): Promise<{
