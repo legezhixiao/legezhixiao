@@ -5,7 +5,6 @@ import type {
     ResetPasswordData,
     ChangePasswordData
 } from '../types'
-// 文件已清空
 import {
     UserRole,
     SubscriptionTier
@@ -22,33 +21,37 @@ const ACCESS_TOKEN_KEY = 'access_token'
 
 class AuthService {
     constructor() {
-        // 检查本地存储的认证状态
+        // 异步初始化认证状态
         this.initializeAuth()
     }
 
     // 初始化认证状态
-    private initializeAuth() {
-        const token = localStorage.getItem(ACCESS_TOKEN_KEY)
-        const user = localStorage.getItem(CURRENT_USER_KEY)
+    private async initializeAuth() {
+        const token = localStorage.getItem(ACCESS_TOKEN_KEY) || sessionStorage.getItem(ACCESS_TOKEN_KEY)
+        const user = localStorage.getItem(CURRENT_USER_KEY) || sessionStorage.getItem(CURRENT_USER_KEY)
         
         if (token && user) {
-            // 验证令牌是否过期
-            if (this.isTokenValid(token)) {
-                // 令牌有效，保持登录状态
-                return
-            } else {
-                // 令牌过期，清除本地存储
+            // 验证令牌是否有效
+            const isValid = await this.isTokenValid(token)
+            if (!isValid) {
+                // 令牌无效，清除本地存储
                 this.logout()
             }
         }
     }
 
-    // 验证令牌有效性
-    private isTokenValid(token: string): boolean {
+    // 验证令牌有效性 - 向后端发送验证请求
+    private async isTokenValid(token: string): Promise<boolean> {
         try {
-            const payload = JSON.parse(atob(token.split('.')[1]))
-            return payload.exp * 1000 > Date.now()
+            const response = await fetch('/api/auth/verify-token', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+            return response.ok
         } catch (error) {
+            console.error('令牌验证失败:', error)
             return false
         }
     }
@@ -59,10 +62,6 @@ class AuthService {
             const response = await api.post(`${API_BASE_URL}/register`, data)
             
             const { user, token } = response.data
-            
-            // 存储认证信息
-            // localStorage.setItem(ACCESS_TOKEN_KEY, token)
-            // localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user))
             
             return { user, token }
         } catch (error) {
@@ -132,20 +131,32 @@ class AuthService {
         return null
     }
 
-    // 检查认证状态
+    // 检查认证状态（同步方法，仅检查token存在性）
     isAuthenticated(): boolean {
         const token = localStorage.getItem(ACCESS_TOKEN_KEY) || sessionStorage.getItem(ACCESS_TOKEN_KEY)
-        return token !== null && this.isTokenValid(token)
+        return token !== null
+    }
+
+    // 异步验证认证状态（包含服务器验证）
+    async validateAuthentication(): Promise<boolean> {
+        const token = localStorage.getItem(ACCESS_TOKEN_KEY) || sessionStorage.getItem(ACCESS_TOKEN_KEY)
+        if (!token) return false
+        
+        return await this.isTokenValid(token)
     }
 
     // 刷新用户信息
     async refreshUser(): Promise<User> {
         try {
-            const response = await api.get(`${API_BASE_URL}/profile`)
-            const user = response.data
+            const response = await api.get(`${API_BASE_URL}/me`)
+            const user = response.data.user
             
-            // 更新本地存储
-            localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user))
+            // 更新本地存储（保持原有的存储方式）
+            if (localStorage.getItem(CURRENT_USER_KEY)) {
+                localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user))
+            } else {
+                sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user))
+            }
             
             return user
         } catch (error) {
@@ -160,8 +171,12 @@ class AuthService {
             const response = await api.put(`${API_BASE_URL}/profile`, updates)
             const updatedUser = response.data
             
-            // 更新本地存储
-            localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updatedUser))
+            // 更新本地存储（保持原有的存储方式）
+            if (localStorage.getItem(CURRENT_USER_KEY)) {
+                localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updatedUser))
+            } else {
+                sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updatedUser))
+            }
             
             return updatedUser
         } catch (error) {
@@ -223,6 +238,47 @@ class AuthService {
     // 获取访问令牌
     getToken(): string | null {
         return localStorage.getItem(ACCESS_TOKEN_KEY) || sessionStorage.getItem(ACCESS_TOKEN_KEY)
+    }
+
+    // 检查令牌是否过期并自动清理
+    async checkTokenAndCleanup(): Promise<boolean> {
+        const token = this.getToken();
+        if (!token) return false;
+
+        const isValid = await this.isTokenValid(token);
+        if (!isValid) {
+            // 令牌无效或过期，清除存储
+            this.logout();
+            return false;
+        }
+        return true;
+    }
+
+    // 安全的API请求包装器，自动处理令牌过期
+    async makeAuthenticatedRequest(url: string, options: RequestInit = {}): Promise<Response> {
+        const token = this.getToken();
+        if (!token) {
+            throw new Error('用户未登录');
+        }
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            ...options.headers
+        };
+
+        const response = await fetch(url, {
+            ...options,
+            headers
+        });
+
+        // 如果返回401，说明令牌过期
+        if (response.status === 401) {
+            this.logout();
+            throw new Error('访问令牌已过期，请重新登录');
+        }
+
+        return response;
     }
 
     // 检查用户角色

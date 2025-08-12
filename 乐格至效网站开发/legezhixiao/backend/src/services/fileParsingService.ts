@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
+import mammoth from 'mammoth';
 import { AppError } from '../types';
 
 // 文件解析服务
@@ -84,6 +85,45 @@ export class FileParsingService {
     }
   }
 
+  // 解析 Word 文档 (.docx)
+  private async parseWordDocx(filePath: string): Promise<string> {
+    try {
+      const result = await mammoth.extractRawText({ path: filePath });
+      
+      if (!result.value || result.value.trim().length === 0) {
+        throw new AppError('Word文档内容为空或无法读取', 400);
+      }
+
+      // 检查是否有警告信息
+      if (result.messages && result.messages.length > 0) {
+        console.warn('Word文档解析警告:', result.messages);
+      }
+
+      return result.value;
+    } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      throw new AppError('解析Word文档失败: ' + (error as Error).message, 500);
+    }
+  }
+
+  // 解析旧版Word文档 (.doc) - mammoth对.doc支持有限
+  private async parseWordDoc(filePath: string): Promise<string> {
+    try {
+      // mammoth对.doc支持有限，但我们可以尝试
+      const result = await mammoth.extractRawText({ path: filePath });
+      
+      if (!result.value || result.value.trim().length === 0) {
+        throw new AppError('旧版Word文档(.doc)解析支持有限，建议转换为.docx格式', 400);
+      }
+
+      return result.value;
+    } catch (error) {
+      throw new AppError('旧版Word文档(.doc)解析失败，建议转换为.docx格式后重试', 400);
+    }
+  }
+
   // 主要的文件解析方法
   public async parseFile(filePath: string, mimeType: string): Promise<string> {
     try {
@@ -94,6 +134,36 @@ export class FileParsingService {
     }
 
     let content = '';
+
+    // 当MIME类型为application/octet-stream时，根据文件扩展名决定解析方式
+    if (mimeType === 'application/octet-stream') {
+      const ext = path.extname(filePath).toLowerCase();
+      switch (ext) {
+        case '.txt':
+          mimeType = 'text/plain';
+          break;
+        case '.md':
+          mimeType = 'text/markdown';
+          break;
+        case '.html':
+          mimeType = 'text/html';
+          break;
+        case '.json':
+          mimeType = 'application/json';
+          break;
+        case '.rtf':
+          mimeType = 'application/rtf';
+          break;
+        case '.docx':
+          mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+          break;
+        case '.doc':
+          mimeType = 'application/msword';
+          break;
+        default:
+          throw new AppError(`不支持的文件扩展名: ${ext}`, 400);
+      }
+    }
 
     switch (mimeType) {
       case 'text/plain':
@@ -114,9 +184,12 @@ export class FileParsingService {
         break;
       
       case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        content = await this.parseWordDocx(filePath);
+        break;
+      
       case 'application/msword':
-        // Word 文档需要特殊的库来解析，暂时不支持
-        throw new AppError('Word 文档解析功能正在开发中，请使用 .txt 或 .md 格式', 400);
+        content = await this.parseWordDoc(filePath);
+        break;
       
       case 'application/pdf':
         // PDF 需要特殊的库来解析，暂时不支持

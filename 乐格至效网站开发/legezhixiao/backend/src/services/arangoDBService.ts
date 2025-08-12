@@ -648,8 +648,12 @@ export class ArangoDBService {
    */
   async analyzeContentForNodes(projectId: string, content: string): Promise<any[]> {
     try {
+      console.log('🔍 analyzeContentForNodes开始:', { projectId, contentLength: content.length });
+      
       // 这是一个简单的实现，实际应该使用AI进行内容分析
       const entities = this.extractEntities(content);
+      console.log('📝 提取的实体:', entities);
+      
       const nodes = [];
 
       for (const entity of entities) {
@@ -664,47 +668,193 @@ export class ArangoDBService {
           updatedAt: new Date().toISOString()
         };
 
+        console.log('💾 尝试创建节点:', nodeData);
         const node = await this.createKnowledgeGraphNode(nodeData);
+        console.log('✅ 节点创建成功:', node);
         nodes.push(node);
       }
 
+      console.log('🎉 analyzeContentForNodes完成:', { nodeCount: nodes.length });
       return nodes;
     } catch (error) {
+      console.error('❌ analyzeContentForNodes错误:', error);
       logger.error('分析内容创建节点失败:', error);
       return [];
     }
   }
 
   /**
-   * 简单的实体提取（应该用AI替换）
+   * 智能实体提取（使用AI分析）
    */
   private extractEntities(content: string): any[] {
-    const entities = [];
+    console.log('🔎 开始提取实体，内容:', content);
+    const entities: any[] = [];
     
-    // 简单的规则提取（实际应该使用NLP/AI）
-    const lines = content.split('\n');
-    for (const line of lines) {
-      if (line.includes('角色') || line.includes('人物')) {
-        entities.push({
-          type: 'CHARACTER',
-          name: line.replace(/^.*[角色人物][:：]\s*/, '').trim(),
-          description: '从内容中提取的角色'
-        });
-      } else if (line.includes('地点') || line.includes('场所')) {
-        entities.push({
-          type: 'LOCATION',
-          name: line.replace(/^.*[地点场所][:：]\s*/, '').trim(),
-          description: '从内容中提取的地点'
-        });
+    // 智能关键词模式匹配
+    const patterns: { [key: string]: RegExp[] } = {
+      CHARACTER: [
+        /([一-龢]{2,4}|[A-Za-z]{2,10})\s*(?:是|为|叫做|名为)(?:.*?(?:角色|人物|主角|配角|反派|英雄|专家|博士|教授|工程师|科学家|侦探|医生))/gi,
+        /(?:角色|人物|主角|配角|反派|英雄|专家|博士|教授|工程师|科学家|侦探|医生)[:：]\s*([一-龢]{2,6}|[A-Za-z]{2,15})/gi,
+        /([一-龢]{2,4}|[A-Za-z]{2,10})\s*(?:博士|教授|工程师|科学家|专家|助手|CEO|创始人|侦探|医生)/gi
+      ],
+      LOCATION: [
+        /(?:在|位于|来到|前往|住在)(?:\s*)([一-龢]{2,8}|[A-Za-z\s]{2,20})(?:市|省|国|城|区|街|路|实验室|公司|大学|研究所|机构|公寓|房间)/gi,
+        /(?:地点|场所|位置)[:：]\s*([一-龢]{2,10}|[A-Za-z\s]{2,25})/gi,
+        /([一-龢]{2,8}|[A-Za-z\s]{2,20})(?:实验室|研究所|公司|大学|机构|中心|基地|公寓)/gi
+      ],
+      ORGANIZATION: [
+        /([一-龢]{2,10}|[A-Za-z\s]{2,25})(?:公司|集团|组织|机构|实验室|研究所|大学|中心|委员会)/gi,
+        /(?:公司|组织|机构)[:：]\s*([一-龢]{2,10}|[A-Za-z\s]{2,25})/gi
+      ],
+      CONCEPT: [
+        /([一-龢]{2,10}|[A-Za-z\s]{2,25})(?:项目|计划|算法|技术|系统|平台|协议|理论)/gi,
+        /(?:项目|计划|算法|技术|系统)[:：]\s*([一-龢]{2,10}|[A-Za-z\s]{2,25})/gi
+      ],
+      EVENT: [
+        /([一-龢]{2,10}|[A-Za-z\s]{2,25})(?:事件|会议|发布|合作|竞赛|冲突|危机)/gi,
+        /(?:发生|举行|召开)\s*([一-龢]{2,10}|[A-Za-z\s]{2,25})/gi
+      ]
+    };
+
+    // 对每种类型进行模式匹配
+    for (const [type, typePatterns] of Object.entries(patterns)) {
+      console.log(`🔍 检查${type}类型模式...`);
+      for (const pattern of typePatterns) {
+        let match;
+        while ((match = pattern.exec(content)) !== null) {
+          const name = match[1]?.trim();
+          console.log(`🎯 ${type}模式匹配到:`, name);
+          if (name && name.length >= 2 && name.length <= 20) {
+            // 避免重复实体
+            if (!entities.some((e: any) => e.name === name && e.type === type)) {
+              entities.push({
+                type,
+                name,
+                description: `从内容中智能提取的${this.getTypeDescription(type)}`,
+                importance: this.calculateImportance(content, name),
+                context: this.extractContext(content, name, 50)
+              });
+              console.log(`✅ 添加${type}实体:`, name);
+            }
+          }
+        }
+      }
+    }
+
+    // 简单的通用实体提取（备用）- 扩展更多模式
+    console.log('🔄 使用通用提取模式...');
+    
+    // 人物提取
+    const characterPatterns = [
+      /([一-龢]{2,4})\s*是\s*一?位?([^，。！？]*)/g,
+      /([一-龢]{2,4})\s*(?:住在|来自|工作于)/g,
+      /([一-龢]{2,4})\s*(?:的|和)/g
+    ];
+    
+    for (const pattern of characterPatterns) {
+      let match;
+      while ((match = pattern.exec(content)) !== null) {
+        const name = match[1]?.trim();
+        console.log('📝 通用角色模式匹配:', name);
+        if (name && name.length >= 2 && !entities.some((e: any) => e.name === name)) {
+          entities.push({
+            type: 'CHARACTER',
+            name,
+            description: '从内容中提取的角色',
+            importance: 70,
+            context: content.substring(Math.max(0, match.index - 20), match.index + 50)
+          });
+          console.log('✅ 添加通用角色:', name);
+        }
       }
     }
     
-    return entities;
+    // 地点提取
+    const locationPatterns = [
+      /(?:住在|位于|在)([一-龢]{2,6})/g,
+      /([一-龢]{2,6})(?:的|里|中)/g
+    ];
+    
+    for (const pattern of locationPatterns) {
+      let match;
+      while ((match = pattern.exec(content)) !== null) {
+        const name = match[1]?.trim();
+        console.log('🏠 通用地点模式匹配:', name);
+        if (name && name.length >= 2 && !entities.some((e: any) => e.name === name)) {
+          entities.push({
+            type: 'LOCATION',
+            name,
+            description: '从内容中提取的地点',
+            importance: 60,
+            context: content.substring(Math.max(0, match.index - 20), match.index + 50)
+          });
+          console.log('✅ 添加通用地点:', name);
+        }
+      }
+    }
+    
+    console.log('🎊 实体提取完成，共找到:', entities.length, '个实体');
+    return entities.slice(0, 10); // 限制最多10个实体
+  }
+
+  private getTypeDescription(type: string): string {
+    const descriptions: { [key: string]: string } = {
+      CHARACTER: '角色',
+      LOCATION: '地点',
+      ORGANIZATION: '组织',
+      CONCEPT: '概念',
+      EVENT: '事件'
+    };
+    return descriptions[type] || '实体';
+  }
+
+  private extractContext(content: string, name: string, length: number): string {
+    const index = content.indexOf(name);
+    if (index === -1) return '';
+    
+    const start = Math.max(0, index - length/2);
+    const end = Math.min(content.length, index + name.length + length/2);
+    return content.substring(start, end).trim();
+  }
+
+  private calculateImportance(content: string, name: string): number {
+    const mentions = (content.match(new RegExp(name, 'g')) || []).length;
+    const contentLength = content.length;
+    const nameLength = name.length;
+    
+    // 基于提及频率、内容长度等计算重要性
+    let importance = Math.min(90, 30 + mentions * 15 + (nameLength > 3 ? 10 : 0));
+    
+    // 特殊类型加权
+    if (content.includes(`${name}是`) || content.includes(`${name}为`)) importance += 10;
+    if (content.includes(`主角`) && content.includes(name)) importance += 20;
+    
+    return Math.max(20, Math.min(100, importance));
   }
 
   /**
-   * 搜索相关节点
+   * 根据类型获取节点
    */
+  async getNodesByType(projectId: string, nodeType: string): Promise<any[]> {
+    try {
+      const query = `
+        FOR node IN knowledge_graph_nodes
+        FILTER node.projectId == @projectId AND node.type == @nodeType
+        RETURN node
+      `;
+
+      const bindVars = {
+        projectId,
+        nodeType
+      };
+
+      const cursor = await this.db.query(query, bindVars);
+      return await cursor.all();
+    } catch (error) {
+      logger.error('根据类型获取节点失败:', error);
+      return [];
+    }
+  }
   async searchRelatedNodes(projectId: string, context: string, type?: string): Promise<any[]> {
     try {
       let filterConditions = ['node.projectId == @projectId'];

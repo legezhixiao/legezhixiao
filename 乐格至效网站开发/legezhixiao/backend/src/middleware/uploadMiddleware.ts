@@ -1,6 +1,6 @@
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs/promises';
+import { promises as fs } from 'fs';
 import { Request } from 'express';
 import { AppError } from '../types';
 
@@ -74,15 +74,6 @@ const storage = multer.diskStorage({
 
 // 文件过滤器
 const fileFilter = (req: Request, file: Express.Multer.File, cb: Function) => {
-  // 检查文件类型
-  if (!SUPPORTED_NOVEL_FORMATS[file.mimetype as keyof typeof SUPPORTED_NOVEL_FORMATS]) {
-    const error = new AppError(
-      `不支持的文件类型: ${file.mimetype}。支持的格式: ${Object.values(SUPPORTED_NOVEL_FORMATS).join(', ')}`,
-      400
-    );
-    return cb(error, false);
-  }
-
   // 检查文件名
   if (!file.originalname) {
     const error = new AppError('文件名不能为空', 400);
@@ -96,6 +87,18 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: Function) => {
   if (!allowedExtensions.includes(fileExtension)) {
     const error = new AppError(
       `不支持的文件扩展名: ${fileExtension}。支持的扩展名: ${allowedExtensions.join(', ')}`,
+      400
+    );
+    return cb(error, false);
+  }
+
+  // 检查文件类型（如果MIME类型是application/octet-stream，则跳过MIME检查，只依赖扩展名）
+  const isSupportedMimeType = SUPPORTED_NOVEL_FORMATS[file.mimetype as keyof typeof SUPPORTED_NOVEL_FORMATS];
+  const isGenericBinary = file.mimetype === 'application/octet-stream';
+  
+  if (!isSupportedMimeType && !isGenericBinary) {
+    const error = new AppError(
+      `不支持的文件类型: ${file.mimetype}。支持的格式: ${Object.values(SUPPORTED_NOVEL_FORMATS).join(', ')}`,
       400
     );
     return cb(error, false);

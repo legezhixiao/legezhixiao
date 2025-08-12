@@ -8,12 +8,20 @@ module.exports = {
       env: {
         NODE_ENV: 'development',
         PORT: '3000',
-        HOST: '0.0.0.0'
+        HOST: '0.0.0.0',
+        ARANGODB_URL: 'http://localhost:8529',
+        ARANGODB_DATABASE: 'legezhixiao',
+        ARANGODB_USERNAME: 'root',
+        ARANGODB_PASSWORD: ''
       },
       env_production: {
         NODE_ENV: 'production',
         PORT: '3000',
-        HOST: '0.0.0.0'
+        HOST: '0.0.0.0',
+        ARANGODB_URL: 'http://localhost:8529',
+        ARANGODB_DATABASE: 'legezhixiao',
+        ARANGODB_USERNAME: 'root',
+        ARANGODB_PASSWORD: ''
       },
       autorestart: true,
       watch: ['src'],
@@ -25,9 +33,10 @@ module.exports = {
       time: true,
       instances: 1,
       exec_mode: 'fork',
-      restart_delay: 2000,
+      restart_delay: 5000,
       max_restarts: 10,
-      min_uptime: '10s'
+      min_uptime: '20s',
+      kill_timeout: 5000
     },
     {
       name: 'frontend',

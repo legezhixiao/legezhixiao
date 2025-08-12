@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import axios from 'axios';
+import { jasperAIService } from '../services/jasperAIService';
 
 // SiliconFlow API配置
 const SILICONFLOW_API_KEY = 'sk-mjithqmjwccqgffouexthbavtnvftwkqjludpcxhrmeztcib';
@@ -15,6 +16,8 @@ interface AIRequest {
   context?: string;
   type?: 'continuation' | 'improvement' | 'correction' | 'general';
   maxTokens?: number;
+  projectId?: string;
+  useTools?: boolean;
 }
 
 interface AIResponse {
@@ -24,6 +27,7 @@ interface AIResponse {
   confidence: number;
   reason: string;
   provider: string;
+  toolsUsed?: string[];
 }
 
 // AI助手对话处理
@@ -31,7 +35,14 @@ export const handleChatRequest = async (req: Request, res: Response): Promise<vo
   try {
     console.log('🤖 收到AI助手请求:', req.body);
     
-    const { message, context, type = 'general', maxTokens = 1000 }: AIRequest = req.body;
+    const { 
+      message, 
+      context, 
+      type = 'general', 
+      maxTokens = 1000, 
+      projectId = '1',
+      useTools = false 
+    }: AIRequest = req.body;
 
     if (!message || message.trim().length === 0) {
       res.status(400).json({
@@ -40,6 +51,30 @@ export const handleChatRequest = async (req: Request, res: Response): Promise<vo
       });
       return;
     }
+
+    // 如果启用工具且消息涉及知识图谱，使用Jasper AI服务
+    if (useTools) {
+      console.log('🔧 使用Jasper AI增强处理...');
+      
+      const jasperResponse = await jasperAIService.processWithTools(message, projectId);
+      
+      // 构建响应
+      const aiResponse: AIResponse = {
+        id: jasperResponse.id,
+        type: type,
+        text: jasperResponse.text,
+        confidence: jasperResponse.confidence,
+        reason: getReasonByType(type),
+        provider: jasperResponse.provider,
+        toolsUsed: jasperResponse.toolsUsed.map(tool => tool.name)
+      };
+
+      console.log('✅ Jasper AI处理完成，使用了工具:', aiResponse.toolsUsed);
+      res.json(aiResponse);
+      return;
+    }
+
+    // 否则使用传统的AI处理流程
 
     // 构建系统提示词
     const systemPrompt = `你是乐格至效AI小说创作助手，专门帮助用户进行小说创作。你的主要功能包括：

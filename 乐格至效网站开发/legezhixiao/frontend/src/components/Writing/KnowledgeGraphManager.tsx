@@ -335,6 +335,7 @@ const KnowledgeGraphManager: React.FC<KnowledgeGraphManagerProps> = ({
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{ width: 200 }}
                 allowClear
+                prefix={<SearchOutlined />}
               />
               <Select
                 value={selectedNodeType}
@@ -377,6 +378,20 @@ const KnowledgeGraphManager: React.FC<KnowledgeGraphManagerProps> = ({
               >
                 导出
               </Button>
+              <Tooltip title="配置图谱显示选项">
+                <Button
+                  icon={<SettingOutlined />}
+                  onClick={() => {
+                    // 这里可以添加设置功能，比如图形布局选项、显示选项等
+                    Modal.info({
+                      title: '图谱设置',
+                      content: '设置功能开发中...'
+                    });
+                  }}
+                >
+                  设置
+                </Button>
+              </Tooltip>
             </Space>
           </Col>
         </Row>
@@ -414,6 +429,28 @@ const KnowledgeGraphManager: React.FC<KnowledgeGraphManagerProps> = ({
               suffix={`/ ${graphData?.relationships?.length || 0}`}
             />
             
+            {/* 显示选项 */}
+            <div style={{ marginBottom: 16, padding: '8px', background: '#f5f5f5', borderRadius: '4px' }}>
+              <Space>
+                <span>显示节点标签:</span>
+                <Switch 
+                  defaultChecked={true}
+                  onChange={(checked) => {
+                    // 这里可以控制图谱中节点标签的显示/隐藏
+                    console.log('节点标签显示:', checked);
+                  }}
+                />
+                <span>显示关系标签:</span>
+                <Switch 
+                  defaultChecked={true}
+                  onChange={(checked) => {
+                    // 这里可以控制图谱中关系标签的显示/隐藏
+                    console.log('关系标签显示:', checked);
+                  }}
+                />
+              </Space>
+            </div>
+            
             {/* 节点列表 */}
             <div>
               <Title level={5}>节点列表</Title>
@@ -423,12 +460,48 @@ const KnowledgeGraphManager: React.FC<KnowledgeGraphManagerProps> = ({
                 renderItem={(node) => (
                   <List.Item
                     actions={[
-                      <Button 
-                        type="link" 
-                        size="small" 
-                        icon={<EditOutlined />}
-                        onClick={() => handleEditNode(node)}
-                      />
+                      <Tooltip title="查看节点详情">
+                        <Button 
+                          type="link" 
+                          size="small" 
+                          icon={<EyeOutlined />}
+                          onClick={() => {
+                            const connectedNodes = getConnectedNodes(node.id);
+                            const relationships = getNodeRelationships(node.id);
+                            Modal.info({
+                              title: `节点详情: ${node.name}`,
+                              content: (
+                                <div>
+                                  <p><strong>类型:</strong> {node.type}</p>
+                                  <p><strong>描述:</strong> {node.description || '无'}</p>
+                                  <p><strong>关联节点数:</strong> {connectedNodes.length}</p>
+                                  <p><strong>关系数:</strong> {relationships.length}</p>
+                                  {connectedNodes.length > 0 && (
+                                    <div>
+                                      <strong>关联节点:</strong>
+                                      <ul>
+                                        {connectedNodes.slice(0, 5).map(n => (
+                                          <li key={n.id}>{n.name} ({n.type})</li>
+                                        ))}
+                                        {connectedNodes.length > 5 && <li>...还有{connectedNodes.length - 5}个节点</li>}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </div>
+                              ),
+                              width: 600
+                            });
+                          }}
+                        />
+                      </Tooltip>,
+                      <Tooltip title="编辑节点">
+                        <Button 
+                          type="link" 
+                          size="small" 
+                          icon={<EditOutlined />}
+                          onClick={() => handleEditNode(node)}
+                        />
+                      </Tooltip>
                     ]}
                   >
                     <List.Item.Meta

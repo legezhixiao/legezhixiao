@@ -1,4 +1,12 @@
-# 乐格至效 AI小说创作平台
+# 🎨 乐格至效 - AI智能小说创作平台
+
+基于Jasper AI风格的智能小说创作助手，采用React + TypeScript + Node.js全栈构建。
+
+## ✨ 核心特性
+
+- 🎯 **模板化创作**: Jasper AI风格的专业写作模板
+- 🤖 **AI智能写作**: 多种写作风格和品牌语调
+- 🛠️ **外部工具集成**: 维基百科、知识图谱、情感分析等AI小说创作平台
 
 基于GitHub Copilot风格的智能小说创作助手，采用React + TypeScript + Node.js全栈构建。
 

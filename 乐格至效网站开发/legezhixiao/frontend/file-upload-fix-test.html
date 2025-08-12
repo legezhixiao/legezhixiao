@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件上传修复测试</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f7fa;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        
+        input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px;
+            width: 200px;
+        }
+        
+        pre {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .debug-info {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 12px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 文件上传修复测试</h1>
+        <p>测试修复后的文件上传功能，验证application/octet-stream问题是否解决</p>
+        
+        <div id="globalStatus" class="status info">
+            正在初始化...
+        </div>
+    </div>
+
+    <div class="container">
+        <h3>🔑 登录管理</h3>
+        <div>
+            <input type="email" id="email" value="admin@legezhixiao.com" placeholder="邮箱">
+            <input type="password" id="password" value="lekairong8888" placeholder="密码">
+            <label>
+                <input type="checkbox" id="rememberMe" checked> 记住我
+            </label>
+            <button onclick="login()">登录</button>
+            <button onclick="logout()">登出</button>
+            <button onclick="checkToken()">检查Token</button>
+        </div>
+        <div id="authResult"></div>
+    </div>
+
+    <div class="container">
+        <h3>📂 文件上传测试</h3>
+        <div>
+            <input type="file" id="fileInput" accept=".txt,.md,.docx,.pdf,.html,.rtf">
+            <button onclick="uploadFile()" id="uploadBtn" disabled>解析文件</button>
+            <button onclick="clearResult()">清除结果</button>
+        </div>
+        
+        <div id="fileDebugInfo" class="debug-info" style="display: none;"></div>
+        <div id="uploadResult"></div>
+        <div id="uploadDetails"></div>
+    </div>
+
+    <div class="container">
+        <h3>🧪 API测试</h3>
+        <button onclick="testApi()">测试API连接</button>
+        <button onclick="getFormats()">获取支持格式</button>
+        <div id="apiResult"></div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+
+        // 页面加载时初始化
+        window.addEventListener('load', () => {
+            updateGlobalStatus();
+            setupFileInput();
+        });
+
+        // 设置文件输入
+        function setupFileInput() {
+            const fileInput = document.getElementById('fileInput');
+            fileInput.addEventListener('change', (e) => {
+                selectedFile = e.target.files[0];
+                updateFileDebugInfo();
+                document.getElementById('uploadBtn').disabled = !selectedFile;
+            });
+        }
+
+        // 更新文件调试信息
+        function updateFileDebugInfo() {
+            const debugEl = document.getElementById('fileDebugInfo');
+            
+            if (selectedFile) {
+                debugEl.style.display = 'block';
+                debugEl.innerHTML = `
+<strong>文件调试信息:</strong>
+名称: ${selectedFile.name}
+大小: ${selectedFile.size} bytes (${(selectedFile.size/1024).toFixed(2)} KB)
+类型: ${selectedFile.type || '未知'}
+最后修改: ${new Date(selectedFile.lastModified).toLocaleString()}
+                `;
+            } else {
+                debugEl.style.display = 'none';
+            }
+        }
+
+        // 更新全局状态
+        async function updateGlobalStatus() {
+            const statusEl = document.getElementById('globalStatus');
+            
+            try {
+                // 检查认证状态
+                const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+                const user = localStorage.getItem('current_user') || sessionStorage.getItem('current_user');
+                
+                if (!token) {
+                    statusEl.className = 'status warning';
+                    statusEl.textContent = '⚠️ 未登录 - 需要先登录才能上传文件';
+                    return;
+                }
+
+                // 验证token
+                const response = await fetch('/api/auth/verify-token', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const userData = user ? JSON.parse(user) : {};
+                    statusEl.className = 'status success';
+                    statusEl.textContent = `✅ 已登录 - ${userData.username || userData.email || '用户'} - 可以上传文件`;
+                } else {
+                    statusEl.className = 'status error';
+                    statusEl.textContent = '❌ Token无效 - 请重新登录';
+                }
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = `❌ 状态检查失败: ${error.message}`;
+            }
+        }
+
+        // 登录
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const rememberMe = document.getElementById('rememberMe').checked;
+            const resultEl = document.getElementById('authResult');
+            
+            try {
+                resultEl.className = 'status info';
+                resultEl.textContent = '正在登录...';
+                
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password, rememberMe })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    const { user, accessToken } = result.data;
+                    
+                    // 存储认证信息
+                    if (rememberMe) {
+                        localStorage.setItem('access_token', accessToken);
+                        localStorage.setItem('current_user', JSON.stringify(user));
+                    } else {
+                        sessionStorage.setItem('access_token', accessToken);
+                        sessionStorage.setItem('current_user', JSON.stringify(user));
+                    }
+                    
+                    resultEl.className = 'status success';
+                    resultEl.textContent = `✅ 登录成功! Token长度: ${accessToken.length}`;
+                    
+                    updateGlobalStatus();
+                } else {
+                    resultEl.className = 'status error';
+                    resultEl.textContent = `❌ 登录失败: ${result.message}`;
+                }
+            } catch (error) {
+                resultEl.className = 'status error';
+                resultEl.textContent = `❌ 登录错误: ${error.message}`;
+            }
+        }
+
+        // 登出
+        function logout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('current_user');
+            sessionStorage.removeItem('access_token');
+            sessionStorage.removeItem('current_user');
+            
+            document.getElementById('authResult').className = 'status info';
+            document.getElementById('authResult').textContent = '✅ 已登出';
+            
+            updateGlobalStatus();
+        }
+
+        // 检查Token
+        async function checkToken() {
+            const resultEl = document.getElementById('authResult');
+            const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+            
+            if (!token) {
+                resultEl.className = 'status warning';
+                resultEl.textContent = '⚠️ 没有找到token';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/verify-token', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    resultEl.className = 'status success';
+                    resultEl.innerHTML = `
+                        ✅ Token有效<br>
+                        长度: ${token.length}<br>
+                        前缀: ${token.substring(0, 30)}...
+                    `;
+                } else {
+                    resultEl.className = 'status error';
+                    resultEl.textContent = `❌ Token无效: ${result.message}`;
+                }
+            } catch (error) {
+                resultEl.className = 'status error';
+                resultEl.textContent = `❌ Token验证失败: ${error.message}`;
+            }
+        }
+
+        // 上传文件
+        async function uploadFile() {
+            if (!selectedFile) {
+                alert('请先选择文件');
+                return;
+            }
+            
+            const resultEl = document.getElementById('uploadResult');
+            const detailsEl = document.getElementById('uploadDetails');
+            const uploadBtn = document.getElementById('uploadBtn');
+            
+            try {
+                uploadBtn.disabled = true;
+                uploadBtn.textContent = '上传中...';
+                
+                resultEl.className = 'status info';
+                resultEl.textContent = '正在上传文件...';
+                detailsEl.innerHTML = '';
+                
+                const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+                
+                if (!token) {
+                    throw new Error('Token不存在，请先登录');
+                }
+                
+                console.log('=== 上传开始 ===');
+                console.log('文件信息:', {
+                    name: selectedFile.name,
+                    size: selectedFile.size,
+                    type: selectedFile.type,
+                    lastModified: new Date(selectedFile.lastModified)
+                });
+                console.log('Token:', token.substring(0, 30) + '...');
+                
+                const formData = new FormData();
+                formData.append('novel', selectedFile);
+                
+                console.log('FormData entries:', Array.from(formData.entries()));
+                
+                const response = await fetch('/api/upload/parse', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                console.log('响应状态:', response.status, response.statusText);
+                console.log('响应头:', Object.fromEntries(response.headers.entries()));
+                
+                const result = await response.json();
+                console.log('响应数据:', result);
+                console.log('=== 上传结束 ===');
+                
+                if (response.ok && result.success) {
+                    resultEl.className = 'status success';
+                    resultEl.textContent = `✅ ${result.message}`;
+                    
+                    detailsEl.innerHTML = `
+                        <h4>📊 分析结果:</h4>
+                        <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultEl.className = 'status error';
+                    resultEl.textContent = `❌ 上传失败 (${response.status}): ${result.error?.message || result.message || '未知错误'}`;
+                    
+                    detailsEl.innerHTML = `
+                        <h4>❌ 错误详情:</h4>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                console.error('上传异常:', error);
+                resultEl.className = 'status error';
+                resultEl.textContent = `❌ 上传异常: ${error.message}`;
+                
+                detailsEl.innerHTML = `
+                    <h4>❌ 异常详情:</h4>
+                    <pre>${error.stack || error.toString()}</pre>
+                `;
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = '解析文件';
+            }
+        }
+
+        // 清除结果
+        function clearResult() {
+            document.getElementById('uploadResult').innerHTML = '';
+            document.getElementById('uploadDetails').innerHTML = '';
+            document.getElementById('fileInput').value = '';
+            selectedFile = null;
+            updateFileDebugInfo();
+            document.getElementById('uploadBtn').disabled = true;
+        }
+
+        // 测试API
+        async function testApi() {
+            const resultEl = document.getElementById('apiResult');
+            
+            try {
+                resultEl.className = 'status info';
+                resultEl.textContent = '正在测试API连接...';
+                
+                const response = await fetch('/api/auth/verify-token', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.status === 401) {
+                    resultEl.className = 'status warning';
+                    resultEl.textContent = '⚠️ API连接正常，但需要认证 (401)';
+                } else {
+                    resultEl.className = 'status success';
+                    resultEl.textContent = `✅ API连接正常 (${response.status})`;
+                }
+            } catch (error) {
+                resultEl.className = 'status error';
+                resultEl.textContent = `❌ API连接失败: ${error.message}`;
+            }
+        }
+
+        // 获取支持格式
+        async function getFormats() {
+            const resultEl = document.getElementById('apiResult');
+            
+            try {
+                resultEl.className = 'status info';
+                resultEl.textContent = '正在获取支持格式...';
+                
+                const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+                
+                const response = await fetch('/api/upload/formats', {
+                    headers: {
+                        ...(token && { 'Authorization': `Bearer ${token}` }),
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultEl.className = 'status success';
+                    resultEl.innerHTML = `
+                        <strong>✅ 支持格式获取成功:</strong>
+                        <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultEl.className = 'status error';
+                    resultEl.textContent = `❌ 获取格式失败: ${result.message}`;
+                }
+            } catch (error) {
+                resultEl.className = 'status error';
+                resultEl.textContent = `❌ 获取格式错误: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

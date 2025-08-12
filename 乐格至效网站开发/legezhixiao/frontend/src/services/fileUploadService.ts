@@ -1,5 +1,6 @@
 // 使用相对路径，通过Vite代理转发到后端
 const API_BASE_URL = '/api';
+import { handleTokenExpired, handleError } from '../utils/errorHandler';
 // 文件已清空
 export interface FileUploadResponse {
   success: boolean;
@@ -93,6 +94,32 @@ export interface SupportedFormats {
 
 export class FileUploadService {
   
+  // 处理响应并检查令牌过期
+  private static async handleResponse(response: Response, errorMessage: string = '请求失败'): Promise<any> {
+    // 处理令牌过期或无效的情况
+    if (response.status === 401) {
+      // 清除过期的令牌
+      localStorage.removeItem('access_token');
+      sessionStorage.removeItem('access_token');
+      localStorage.removeItem('current_user');
+      sessionStorage.removeItem('current_user');
+      
+      // 使用统一的错误处理
+      const error = await response.json().catch(() => ({ error: '访问令牌已过期，请重新登录' }));
+      handleTokenExpired();
+      throw new Error(error.error || '访问令牌已过期，请重新登录');
+    }
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: `${errorMessage}: ${response.status}` }));
+      const errorMsg = error.error || `${errorMessage}: ${response.status}`;
+      handleError(errorMsg);
+      throw new Error(errorMsg);
+    }
+    
+    return response.json();
+  }
+  
   // 通用请求方法
   private static async request<T>(
     endpoint: string,
@@ -100,9 +127,11 @@ export class FileUploadService {
   ): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
     
+    const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+    
     const defaultHeaders = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${sessionStorage.getItem('token') || ''}`
+      ...(token && { 'Authorization': `Bearer ${token}` })
     };
 
     const config: RequestInit = {
@@ -115,12 +144,7 @@ export class FileUploadService {
 
     const response = await fetch(url, config);
     
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || `请求失败: ${response.status}`);
-    }
-
-    return response.json();
+    return this.handleResponse(response, '请求失败');
   }
   
   // 获取支持的文件格式
@@ -135,20 +159,17 @@ export class FileUploadService {
     const formData = new FormData();
     formData.append('novel', file);
 
+    const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+
     const response = await fetch(`${API_BASE_URL}/upload/parse`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${sessionStorage.getItem('token') || ''}`
+        ...(token && { 'Authorization': `Bearer ${token}` })
       },
       body: formData
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || '文件解析失败');
-    }
-
-    return response.json();
+    return this.handleResponse(response, '文件解析失败');
   }
 
   // 批量解析多个文件
@@ -216,20 +237,17 @@ export class FileUploadService {
       formData.append('genre', projectData.genre);
     }
 
+    const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+
     const response = await fetch(`${API_BASE_URL}/upload/import/new-project`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${sessionStorage.getItem('token') || ''}`
+        ...(token && { 'Authorization': `Bearer ${token}` })
       },
       body: formData
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || '导入到新项目失败');
-    }
-
-    return response.json();
+    return this.handleResponse(response, '导入到新项目失败');
   }
 
   // 导入到现有项目
@@ -243,20 +261,17 @@ export class FileUploadService {
     formData.append('projectId', projectId);
     formData.append('importMode', importMode);
 
+    const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+
     const response = await fetch(`${API_BASE_URL}/upload/import/existing-project`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${sessionStorage.getItem('token') || ''}`
+        ...(token && { 'Authorization': `Bearer ${token}` })
       },
       body: formData
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || '导入到现有项目失败');
-    }
-
-    return response.json();
+    return this.handleResponse(response, '导入到现有项目失败');
   }
 
   // 验证文件格式 - 客户端同步版本

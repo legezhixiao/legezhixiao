@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件上传调试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .success { background: #d4edda; color: #155724; padding: 10px; border-radius: 4px; }
+        .error { background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; }
+        .info { background: #d1ecf1; color: #0c5460; padding: 10px; border-radius: 4px; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        input[type="file"] { margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🔧 文件上传调试工具</h1>
+    
+    <div class="section">
+        <h3>1. 获取Token</h3>
+        <button onclick="getToken()">获取登录Token</button>
+        <div id="tokenResult"></div>
+    </div>
+    
+    <div class="section">
+        <h3>2. 验证Token</h3>
+        <button onclick="verifyToken()">验证Token</button>
+        <div id="verifyResult"></div>
+    </div>
+    
+    <div class="section">
+        <h3>3. 创建测试文件</h3>
+        <button onclick="createTestFile()">创建测试文件</button>
+        <div id="fileResult"></div>
+    </div>
+    
+    <div class="section">
+        <h3>4. 上传文件</h3>
+        <input type="file" id="fileInput" accept=".txt,.md,.docx,.pdf,.html,.rtf">
+        <button onclick="uploadFile()">上传文件</button>
+        <div id="uploadResult"></div>
+    </div>
+    
+    <div class="section">
+        <h3>5. 调试信息</h3>
+        <div id="debugInfo"></div>
+    </div>
+
+    <script>
+        let currentToken = null;
+        let testFile = null;
+        
+        function log(message, data = null) {
+            console.log(message, data);
+            const debugDiv = document.getElementById('debugInfo');
+            const timestamp = new Date().toLocaleTimeString();
+            debugDiv.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            if (data) {
+                debugDiv.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            }
+        }
+        
+        async function getToken() {
+            const resultDiv = document.getElementById('tokenResult');
+            
+            try {
+                log('🔑 开始获取Token...');
+                
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@legezhixiao.com',
+                        password: 'lekairong8888',
+                        rememberMe: true
+                    })
+                });
+                
+                const result = await response.json();
+                log('登录响应', {status: response.status, result});
+                
+                if (result.success) {
+                    currentToken = result.data.accessToken;
+                    resultDiv.className = 'success';
+                    resultDiv.innerHTML = `✅ Token获取成功<br>Token: ${currentToken.substring(0, 30)}...`;
+                    
+                    // 保存到localStorage
+                    localStorage.setItem('access_token', currentToken);
+                    localStorage.setItem('current_user', JSON.stringify(result.data.user));
+                    
+                    log('✅ Token已保存到localStorage');
+                } else {
+                    resultDiv.className = 'error';
+                    resultDiv.textContent = `❌ 登录失败: ${result.message}`;
+                }
+            } catch (error) {
+                log('❌ 获取Token失败', error);
+                resultDiv.className = 'error';
+                resultDiv.textContent = `❌ 错误: ${error.message}`;
+            }
+        }
+        
+        async function verifyToken() {
+            const resultDiv = document.getElementById('verifyResult');
+            
+            if (!currentToken) {
+                currentToken = localStorage.getItem('access_token');
+            }
+            
+            if (!currentToken) {
+                resultDiv.className = 'error';
+                resultDiv.textContent = '❌ 请先获取Token';
+                return;
+            }
+            
+            try {
+                log('🔍 验证Token...', {token: currentToken.substring(0, 30) + '...'});
+                
+                const response = await fetch('/api/auth/verify-token', {
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                log('Token验证响应', {status: response.status, result});
+                
+                if (response.ok && result.success) {
+                    resultDiv.className = 'success';
+                    resultDiv.textContent = '✅ Token有效';
+                } else {
+                    resultDiv.className = 'error';
+                    resultDiv.textContent = `❌ Token无效: ${result.message}`;
+                }
+            } catch (error) {
+                log('❌ Token验证失败', error);
+                resultDiv.className = 'error';
+                resultDiv.textContent = `❌ 验证错误: ${error.message}`;
+            }
+        }
+        
+        function createTestFile() {
+            const resultDiv = document.getElementById('fileResult');
+            
+            try {
+                log('📄 创建测试文件...');
+                
+                const content = `这是一个测试小说文件。
+
+第一章 开始
+
+在很久很久以前，有一个美丽的王国...这里有很多故事。
+
+第二章 继续
+
+故事继续进行，主角开始了新的冒险...`;
+                
+                testFile = new File([content], 'debug-test.txt', {type: 'text/plain'});
+                
+                log('✅ 测试文件创建成功', {
+                    name: testFile.name,
+                    size: testFile.size,
+                    type: testFile.type
+                });
+                
+                resultDiv.className = 'success';
+                resultDiv.innerHTML = `✅ 测试文件创建成功<br>文件名: ${testFile.name}<br>大小: ${testFile.size} bytes<br>类型: ${testFile.type}`;
+            } catch (error) {
+                log('❌ 文件创建失败', error);
+                resultDiv.className = 'error';
+                resultDiv.textContent = `❌ 创建失败: ${error.message}`;
+            }
+        }
+        
+        async function uploadFile() {
+            const resultDiv = document.getElementById('uploadResult');
+            const fileInput = document.getElementById('fileInput');
+            
+            const file = fileInput.files[0] || testFile;
+            
+            if (!file) {
+                resultDiv.className = 'error';
+                resultDiv.textContent = '❌ 请选择文件或创建测试文件';
+                return;
+            }
+            
+            if (!currentToken) {
+                currentToken = localStorage.getItem('access_token');
+            }
+            
+            if (!currentToken) {
+                resultDiv.className = 'error';
+                resultDiv.textContent = '❌ 请先获取Token';
+                return;
+            }
+            
+            try {
+                log('📤 开始上传文件...', {
+                    fileName: file.name,
+                    fileSize: file.size,
+                    fileType: file.type,
+                    token: currentToken.substring(0, 30) + '...'
+                });
+                
+                const formData = new FormData();
+                formData.append('novel', file);
+                
+                log('📦 FormData准备完成');
+                
+                const response = await fetch('/api/upload/parse', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`
+                        // 注意：不要设置Content-Type，让浏览器自动设置multipart/form-data边界
+                    },
+                    body: formData
+                });
+                
+                log('📥 收到服务器响应', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: Object.fromEntries(response.headers.entries())
+                });
+                
+                let result;
+                const contentType = response.headers.get('content-type');
+                
+                if (contentType && contentType.includes('application/json')) {
+                    result = await response.json();
+                } else {
+                    const text = await response.text();
+                    log('⚠️ 服务器返回非JSON响应', {text});
+                    throw new Error(`服务器返回了非JSON响应: ${text.substring(0, 100)}`);
+                }
+                
+                log('📊 解析响应', result);
+                
+                if (response.ok && result.success) {
+                    resultDiv.className = 'success';
+                    resultDiv.innerHTML = `✅ ${result.message}<br><pre>${JSON.stringify(result.data, null, 2)}</pre>`;
+                    log('✅ 上传成功!');
+                } else {
+                    resultDiv.className = 'error';
+                    resultDiv.innerHTML = `❌ 上传失败 (${response.status})<br>${result.error || result.message}<br><pre>${JSON.stringify(result, null, 2)}</pre>`;
+                    log('❌ 上传失败', result);
+                }
+            } catch (error) {
+                log('❌ 上传错误', error);
+                resultDiv.className = 'error';
+                resultDiv.textContent = `❌ 上传错误: ${error.message}`;
+            }
+        }
+        
+        // 页面加载时自动检查localStorage中的Token
+        window.addEventListener('load', () => {
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                currentToken = token;
+                log('🔍 发现已保存的Token', {token: token.substring(0, 30) + '...'});
+            }
+        });
+    </script>
+</body>
+</html>

@@ -46,14 +46,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 if (authService.isAuthenticated()) {
                     const user = authService.getCurrentUser()
                     if (user) {
-                        // 刷新用户信息
-                        const refreshedUser = await authService.refreshUser()
+                        // 先设置本地存储的用户信息
                         setState({
-                            user: refreshedUser,
+                            user,
                             isAuthenticated: true,
                             isLoading: false,
                             error: null
                         })
+
+                        // 在后台验证token有效性
+                        try {
+                            const isValid = await authService.validateAuthentication()
+                            if (!isValid) {
+                                // Token无效，清除状态
+                                await authService.logout()
+                                setState({
+                                    user: null,
+                                    isAuthenticated: false,
+                                    isLoading: false,
+                                    error: null
+                                })
+                            }
+                        } catch (error) {
+                            // 验证失败，但保持本地状态（可能是网络问题）
+                            console.warn('Token validation failed, keeping local state:', error)
+                        }
                         return
                     }
                 }

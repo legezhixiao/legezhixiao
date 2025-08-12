@@ -1,12 +1,12 @@
 {
     "name": "legezhixiao",
     "version": "1.0.0",
-    "description": "乐格至效 AI小说创作平台 - 基于Copilot的智能写作助手",
+    "description": "乐格至效 AI小说创作平台 - 基于Jasper AI的智能写作助手",
     "keywords": [
         "ai",
         "novel",
         "writing",
-        "copilot",
+        "jasper",
         "react",
         "typescript"
     ],

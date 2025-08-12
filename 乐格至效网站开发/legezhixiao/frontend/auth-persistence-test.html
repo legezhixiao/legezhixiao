@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>认证持久化测试</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f7fa;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        
+        input, select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px;
+            width: 200px;
+        }
+        
+        .test-section {
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 10px 0;
+        }
+        
+        .test-section h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        
+        pre {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        
+        .storage-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .storage-box {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .refresh-test {
+            background: #fff3cd;
+            border: 2px solid #ffeaa7;
+            padding: 16px;
+            border-radius: 6px;
+            margin: 20px 0;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 认证持久化测试工具</h1>
+        <p>此工具用于测试用户登录状态在页面刷新后是否能正确保持</p>
+        
+        <div id="authStatus" class="status info">
+            正在检查认证状态...
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="test-section">
+            <h3>📋 当前状态</h3>
+            <div class="storage-info">
+                <div class="storage-box">
+                    <h4>localStorage</h4>
+                    <div id="localStorageInfo">-</div>
+                </div>
+                <div class="storage-box">
+                    <h4>sessionStorage</h4>
+                    <div id="sessionStorageInfo">-</div>
+                </div>
+            </div>
+            <div>
+                <h4>当前用户信息</h4>
+                <pre id="currentUserInfo">未登录</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="test-section">
+            <h3>🔑 登录测试</h3>
+            <div>
+                <input type="email" id="loginEmail" value="admin@legezhixiao.com" placeholder="邮箱">
+                <input type="password" id="loginPassword" value="lekairong8888" placeholder="密码">
+                <label>
+                    <input type="checkbox" id="rememberMe"> 记住我
+                </label>
+                <button onclick="testLogin()">登录</button>
+                <button onclick="testLogout()">登出</button>
+            </div>
+            <div id="loginResult"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="test-section">
+            <h3>🔍 Token验证测试</h3>
+            <button onclick="testTokenValidation()">验证Token有效性</button>
+            <button onclick="testRefreshUser()">刷新用户信息</button>
+            <div id="tokenResult"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="refresh-test">
+            <h3>🔄 刷新持久化测试</h3>
+            <p>点击下面的按钮来测试页面刷新后登录状态是否保持</p>
+            <button onclick="window.location.reload()" style="background: #28a745; font-size: 16px; padding: 12px 24px;">
+                刷新页面测试
+            </button>
+            <p style="font-size: 14px; margin-top: 10px;">
+                如果登录状态正常，刷新后应该仍然显示为已登录状态
+            </p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="test-section">
+            <h3>🧹 清理测试</h3>
+            <button onclick="clearLocalStorage()">清空 localStorage</button>
+            <button onclick="clearSessionStorage()">清空 sessionStorage</button>
+            <button onclick="clearAllStorage()">清空所有存储</button>
+        </div>
+    </div>
+
+    <script>
+        // API基础URL
+        const API_BASE_URL = '/api/auth';
+        
+        // 存储键
+        const ACCESS_TOKEN_KEY = 'access_token';
+        const CURRENT_USER_KEY = 'current_user';
+
+        // 页面加载时检查认证状态
+        window.addEventListener('load', () => {
+            updateAuthStatus();
+            updateStorageInfo();
+        });
+
+        // 更新认证状态显示
+        async function updateAuthStatus() {
+            const statusEl = document.getElementById('authStatus');
+            const currentUserEl = document.getElementById('currentUserInfo');
+            
+            try {
+                // 检查本地存储
+                const token = localStorage.getItem(ACCESS_TOKEN_KEY) || sessionStorage.getItem(ACCESS_TOKEN_KEY);
+                const userStr = localStorage.getItem(CURRENT_USER_KEY) || sessionStorage.getItem(CURRENT_USER_KEY);
+                
+                if (!token || !userStr) {
+                    statusEl.className = 'status warning';
+                    statusEl.textContent = '❌ 未登录 - 没有找到token或用户信息';
+                    currentUserEl.textContent = '未登录';
+                    return;
+                }
+
+                // 解析用户信息
+                const user = JSON.parse(userStr);
+                currentUserEl.textContent = JSON.stringify(user, null, 2);
+
+                // 验证token有效性
+                const response = await fetch('/api/auth/verify-token', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        statusEl.className = 'status success';
+                        statusEl.textContent = `✅ 已登录 - ${user.username} (${user.email})`;
+                    } else {
+                        statusEl.className = 'status error';
+                        statusEl.textContent = '❌ Token无效 - ' + result.message;
+                    }
+                } else {
+                    statusEl.className = 'status error';
+                    statusEl.textContent = '❌ Token验证失败 - HTTP ' + response.status;
+                }
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = '❌ 认证检查失败: ' + error.message;
+                console.error('认证状态检查失败:', error);
+            }
+        }
+
+        // 更新存储信息显示
+        function updateStorageInfo() {
+            const localEl = document.getElementById('localStorageInfo');
+            const sessionEl = document.getElementById('sessionStorageInfo');
+            
+            // localStorage信息
+            const localToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+            const localUser = localStorage.getItem(CURRENT_USER_KEY);
+            localEl.innerHTML = `
+                <div>Token: ${localToken ? '✅ 存在' : '❌ 不存在'}</div>
+                <div>User: ${localUser ? '✅ 存在' : '❌ 不存在'}</div>
+            `;
+            
+            // sessionStorage信息
+            const sessionToken = sessionStorage.getItem(ACCESS_TOKEN_KEY);
+            const sessionUser = sessionStorage.getItem(CURRENT_USER_KEY);
+            sessionEl.innerHTML = `
+                <div>Token: ${sessionToken ? '✅ 存在' : '❌ 不存在'}</div>
+                <div>User: ${sessionUser ? '✅ 存在' : '❌ 不存在'}</div>
+            `;
+        }
+
+        // 测试登录
+        async function testLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const rememberMe = document.getElementById('rememberMe').checked;
+            const resultEl = document.getElementById('loginResult');
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password, rememberMe })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    const { user, accessToken } = result.data;
+                    
+                    // 存储认证信息
+                    if (rememberMe) {
+                        localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+                        localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+                    } else {
+                        sessionStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+                        sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+                    }
+                    
+                    resultEl.className = 'status success';
+                    resultEl.textContent = `✅ 登录成功! 用户: ${user.username}`;
+                    
+                    // 更新状态显示
+                    updateAuthStatus();
+                    updateStorageInfo();
+                } else {
+                    resultEl.className = 'status error';
+                    resultEl.textContent = `❌ 登录失败: ${result.message}`;
+                }
+            } catch (error) {
+                resultEl.className = 'status error';
+                resultEl.textContent = `❌ 登录错误: ${error.message}`;
+                console.error('登录失败:', error);
+            }
+        }
+
+        // 测试登出
+        async function testLogout() {
+            const resultEl = document.getElementById('loginResult');
+            
+            try {
+                const token = localStorage.getItem(ACCESS_TOKEN_KEY) || sessionStorage.getItem(ACCESS_TOKEN_KEY);
+                
+                if (token) {
+                    await fetch('/api/auth/logout', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('登出请求失败:', error);
+            } finally {
+                // 清除本地存储
+                localStorage.removeItem(ACCESS_TOKEN_KEY);
+                localStorage.removeItem(CURRENT_USER_KEY);
+                sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+                sessionStorage.removeItem(CURRENT_USER_KEY);
+                
+                resultEl.className = 'status info';
+                resultEl.textContent = '✅ 已登出';
+                
+                // 更新状态显示
+                updateAuthStatus();
+                updateStorageInfo();
+            }
+        }
+
+        // 测试Token验证
+        async function testTokenValidation() {
+            const resultEl = document.getElementById('tokenResult');
+            
+            try {
+                const token = localStorage.getItem(ACCESS_TOKEN_KEY) || sessionStorage.getItem(ACCESS_TOKEN_KEY);
+                
+                if (!token) {
+                    resultEl.className = 'status warning';
+                    resultEl.textContent = '⚠️ 没有找到token';
+                    return;
+                }
+                
+                const response = await fetch('/api/auth/verify-token', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    resultEl.className = 'status success';
+                    resultEl.textContent = '✅ Token有效';
+                } else {
+                    resultEl.className = 'status error';
+                    resultEl.textContent = `❌ Token无效: ${result.message}`;
+                }
+            } catch (error) {
+                resultEl.className = 'status error';
+                resultEl.textContent = `❌ 验证失败: ${error.message}`;
+                console.error('Token验证失败:', error);
+            }
+        }
+
+        // 测试刷新用户信息
+        async function testRefreshUser() {
+            const resultEl = document.getElementById('tokenResult');
+            
+            try {
+                const token = localStorage.getItem(ACCESS_TOKEN_KEY) || sessionStorage.getItem(ACCESS_TOKEN_KEY);
+                
+                if (!token) {
+                    resultEl.className = 'status warning';
+                    resultEl.textContent = '⚠️ 没有找到token';
+                    return;
+                }
+                
+                const response = await fetch('/api/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    const user = result.data.user;
+                    
+                    // 更新本地存储
+                    if (localStorage.getItem(CURRENT_USER_KEY)) {
+                        localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+                    } else {
+                        sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+                    }
+                    
+                    resultEl.className = 'status success';
+                    resultEl.textContent = `✅ 用户信息已刷新: ${user.username}`;
+                    
+                    updateAuthStatus();
+                } else {
+                    resultEl.className = 'status error';
+                    resultEl.textContent = `❌ 刷新失败: ${result.message}`;
+                }
+            } catch (error) {
+                resultEl.className = 'status error';
+                resultEl.textContent = `❌ 刷新错误: ${error.message}`;
+                console.error('刷新用户信息失败:', error);
+            }
+        }
+
+        // 清理存储
+        function clearLocalStorage() {
+            localStorage.removeItem(ACCESS_TOKEN_KEY);
+            localStorage.removeItem(CURRENT_USER_KEY);
+            updateStorageInfo();
+            updateAuthStatus();
+        }
+
+        function clearSessionStorage() {
+            sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+            sessionStorage.removeItem(CURRENT_USER_KEY);
+            updateStorageInfo();
+            updateAuthStatus();
+        }
+
+        function clearAllStorage() {
+            clearLocalStorage();
+            clearSessionStorage();
+        }
+    </script>
+</body>
+</html>
