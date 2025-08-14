@@ -115,7 +115,25 @@ export class ArangoDBService {
           type: 'persistent',
           fields: ['authorId']
         } as any);
-        
+            // 创建项目集合
+            const projectCollection = this.db.collection('projects');
+            if (!await projectCollection.exists()) {
+              await projectCollection.create();
+              // 常用索引
+              await projectCollection.ensureIndex({
+                type: 'persistent',
+                fields: ['userId']
+              } as any);
+              await projectCollection.ensureIndex({
+                type: 'persistent',
+                fields: ['title']
+              } as any);
+              await projectCollection.ensureIndex({
+                type: 'persistent',
+                fields: ['status']
+              } as any);
+              logger.info('项目集合创建成功');
+            }
         await novelCollection.ensureIndex({
           type: 'inverted',
           fields: ['title', 'description']

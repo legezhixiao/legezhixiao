@@ -10,12 +10,14 @@ import {
   message,
   Drawer,
   Select,
-  Slider
+  Slider,
+  Upload
 } from 'antd'
 import {
   SaveOutlined,
   SettingOutlined,
-  FullscreenOutlined
+  FullscreenOutlined,
+  UploadOutlined
 } from '@ant-design/icons'
 import Editor from '@monaco-editor/react'
 import type { editor as MonacoEditor } from 'monaco-editor'
@@ -187,6 +189,16 @@ const ChapterEditor: React.FC<ChapterEditorProps> = ({
           >
             {isFullscreen ? '退出全屏' : '全屏'}
           </Button>
+          <Upload
+            accept=".txt,.md,.html,.json,.docx,.doc"
+            showUploadList={false}
+            beforeUpload={(file) => {
+              handleFileUpload(file);
+              return false;
+            }}
+          >
+            <Button icon={<UploadOutlined />}>上传文件</Button>
+          </Upload>
         </Space>
       </Col>
       <Col>
@@ -270,6 +282,54 @@ const ChapterEditor: React.FC<ChapterEditorProps> = ({
       </Space>
     </Drawer>
   )
+
+  const handleFileUpload = async (file: File) => {
+    // 文件大小限制（10MB）
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      message.error('文件大小不能超过10MB');
+      return;
+    }
+
+    // 检查文件类型
+    const allowedTypes = ['.txt', '.md', '.html', '.json', '.docx', '.doc'];
+    const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (!allowedTypes.includes(fileExt)) {
+      message.error('不支持的文件类型');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      message.loading({ content: '正在上传并解析文件...', key: 'fileUpload' });
+      
+      const response = await fetch('/api/files/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `上传失败 (${response.status})`);
+      }
+
+      const result = await response.json();
+      if (result.content) {
+        setContent(result.content);
+        calculateStats(result.content); // 更新统计信息
+        onContentChange?.(result.content); // 通知父组件内容变化
+        message.success({ content: '文件上传并解析成功', key: 'fileUpload' });
+      } else {
+        throw new Error('文件解析失败，未获取到内容');
+      }
+    } catch (error) {
+      const err = error as Error;
+      message.error({ content: err.message || '文件上传失败', key: 'fileUpload' });
+      console.error('文件上传错误:', error);
+    }
+  };
 
   if (isFullscreen) {
     return (

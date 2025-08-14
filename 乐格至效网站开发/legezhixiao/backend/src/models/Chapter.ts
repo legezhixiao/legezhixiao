@@ -1,6 +1,119 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import { databaseConfig } from '../config/database';
 
+// 章节历史版本属性接口
+export interface ChapterVersionAttributes {
+  id: string;
+  chapterId: string;
+  projectId: string;
+  title: string;
+  content: string;
+  order: number;
+  status: ChapterStatus;
+  wordCount: number;
+  summary?: string;
+  notes?: string;
+  tags?: string[];
+  version: number;
+  outline?: string;
+  characters?: string[];
+  locations?: string[];
+  metadata?: object;
+  aiAnalysis?: object;
+  createdAt: Date;
+  updatedAt: Date;
+  savedAt: Date;
+}
+
+interface ChapterVersionCreationAttributes extends Optional<ChapterVersionAttributes, 'id' | 'savedAt'> {}
+
+// 章节历史版本模型
+export class ChapterVersion extends Model<ChapterVersionAttributes, ChapterVersionCreationAttributes> implements ChapterVersionAttributes {
+  public id!: string;
+  public chapterId!: string;
+  public projectId!: string;
+  public title!: string;
+  public content!: string;
+  public order!: number;
+  public status!: ChapterStatus;
+  public wordCount!: number;
+  public summary?: string;
+  public notes?: string;
+  public tags?: string[];
+  public version!: number;
+  public outline?: string;
+  public characters?: string[];
+  public locations?: string[];
+  public metadata?: object;
+  public aiAnalysis?: object;
+  public createdAt!: Date;
+  public updatedAt!: Date;
+  public savedAt!: Date;
+
+  public static initModel() {
+    ChapterVersion.init(
+      {
+        id: {
+          type: DataTypes.UUID,
+          defaultValue: DataTypes.UUIDV4,
+          primaryKey: true,
+        },
+        chapterId: {
+          type: DataTypes.UUID,
+          allowNull: false,
+        },
+        projectId: {
+          type: DataTypes.UUID,
+          allowNull: false,
+        },
+        title: {
+          type: DataTypes.STRING,
+          allowNull: false,
+        },
+        content: {
+          type: DataTypes.TEXT,
+          allowNull: false,
+        },
+        order: {
+          type: DataTypes.INTEGER,
+          allowNull: false,
+        },
+        status: {
+          type: DataTypes.STRING,
+          allowNull: false,
+        },
+        wordCount: {
+          type: DataTypes.INTEGER,
+          allowNull: false,
+        },
+        summary: DataTypes.STRING,
+        notes: DataTypes.STRING,
+        tags: DataTypes.ARRAY(DataTypes.STRING),
+        version: {
+          type: DataTypes.INTEGER,
+          allowNull: false,
+        },
+        outline: DataTypes.STRING,
+        characters: DataTypes.ARRAY(DataTypes.STRING),
+        locations: DataTypes.ARRAY(DataTypes.STRING),
+        metadata: DataTypes.JSONB,
+        aiAnalysis: DataTypes.JSONB,
+        createdAt: DataTypes.DATE,
+        updatedAt: DataTypes.DATE,
+        savedAt: {
+          type: DataTypes.DATE,
+          defaultValue: DataTypes.NOW,
+        },
+      },
+      {
+        sequelize: databaseConfig.getSequelize()!,
+        tableName: 'chapter_versions',
+        timestamps: false,
+      }
+    );
+  }
+}
+
 // 章节状态枚举
 export enum ChapterStatus {
   DRAFT = 'draft',           // 草稿
@@ -85,6 +198,32 @@ class Chapter extends Model<ChapterAttributes, ChapterCreationAttributes> implem
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
+
+  // 保存历史版本
+  public async saveVersion(): Promise<void> {
+    const ChapterVersionModel = databaseConfig.models?.ChapterVersion || ChapterVersion;
+    await ChapterVersionModel.create({
+      chapterId: this.id,
+      projectId: this.projectId,
+      title: this.title,
+      content: this.content,
+      order: this.order,
+      status: this.status,
+      wordCount: this.wordCount,
+      summary: this.summary,
+      notes: this.notes,
+      tags: this.tags,
+      version: this.version,
+      outline: this.outline,
+      characters: this.characters,
+      locations: this.locations,
+      metadata: this.metadata,
+      aiAnalysis: this.aiAnalysis,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+      savedAt: new Date(),
+    });
+  }
 
   // 静态方法：初始化模型
   public static initModel() {

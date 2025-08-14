@@ -6,6 +6,7 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import path from 'path';
+import { autoInitProjectAndTestData } from './utils/autoInitProject';
 import { createServer } from 'http';
 
 // 导入错误处理工具
@@ -282,6 +283,10 @@ async function startServer() {
       logger.warn('数据库连接失败，继续以模拟模式启动');
     }
 
+    // 自动初始化项目ID和测试数据
+    await startupStep('自动初始化项目/测试数据', async () => {
+      await autoInitProjectAndTestData();
+    });
     // 创建上传目录
     await startupStep('创建上传目录', async () => {
       const uploadsDir = path.join(__dirname, '../uploads');

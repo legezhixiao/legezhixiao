@@ -57,7 +57,7 @@ export class FileUploadController {
       const content = await this.fileParsingService.parseFile(file.path, file.mimetype);
       
       // 分析小说内容
-      const analysis = this.fileParsingService.analyzeNovelContent(content);
+  const analysis = await this.fileParsingService.analyzeNovelContent(content);
 
       // 清理临时文件
       await cleanupTempFile(file.path);
@@ -128,7 +128,7 @@ export class FileUploadController {
 
       // 解析文件内容
       const content = await this.fileParsingService.parseFile(file.path, file.mimetype);
-      const analysis = this.fileParsingService.analyzeNovelContent(content);
+  const analysis = await this.fileParsingService.analyzeNovelContent(content);
 
       // 创建新项目
       const projectData = {
@@ -250,7 +250,7 @@ export class FileUploadController {
 
       // 解析文件内容
       const content = await this.fileParsingService.parseFile(file.path, file.mimetype);
-      const analysis = this.fileParsingService.analyzeNovelContent(content);
+  const analysis = await this.fileParsingService.analyzeNovelContent(content);
 
       let createdChapters = [];
       let originalWordCount = project.currentWordCount || 0;

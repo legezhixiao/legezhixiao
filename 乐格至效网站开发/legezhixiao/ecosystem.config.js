@@ -10,18 +10,18 @@ module.exports = {
         PORT: '3000',
         HOST: '0.0.0.0',
         ARANGODB_URL: 'http://localhost:8529',
-        ARANGODB_DATABASE: 'legezhixiao',
+        ARANGODB_DATABASE: 'novel_data',
         ARANGODB_USERNAME: 'root',
-        ARANGODB_PASSWORD: ''
+        ARANGODB_PASSWORD: 'lkr350702'
       },
       env_production: {
         NODE_ENV: 'production',
         PORT: '3000',
         HOST: '0.0.0.0',
         ARANGODB_URL: 'http://localhost:8529',
-        ARANGODB_DATABASE: 'legezhixiao',
+        ARANGODB_DATABASE: 'novel_data',
         ARANGODB_USERNAME: 'root',
-        ARANGODB_PASSWORD: ''
+        ARANGODB_PASSWORD: 'lkr350702'
       },
       autorestart: true,
       watch: ['src'],

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Layout, Tabs, Row, Col, Typography, Space, Button, message, Tag } from 'antd'
+import { Layout, Tabs, Row, Col, Typography, Space, Button, message, Tag, Upload, Modal, List, Spin } from 'antd'
 import {
   EditOutlined,
   BookOutlined,
@@ -7,9 +7,9 @@ import {
   BarChartOutlined,
   SaveOutlined,
   RobotOutlined,
-  BranchesOutlined
-} from '@ant-design/icons'
-import { useParams, useNavigate } from 'react-router-dom'
+  BranchesOutlined,
+  UploadOutlined
+} from '@ant-design/icons';
 import ChapterEditor from '../components/Writing/ChapterEditor'
 import OutlineManager from '../components/Writing/OutlineManager'
 import CharacterManager from '../components/Writing/CharacterManager'
@@ -19,6 +19,7 @@ import KnowledgeGraphTab from '../components/Writing/KnowledgeGraphTab'
 import { useAppStore } from '../store/appStore'
 import { useAI } from '../contexts/AIContext'
 import type { Chapter } from '../types'
+import { useParams, useNavigate } from 'react-router-dom';
 
 const { Content, Sider } = Layout
 const { Title, Text } = Typography
@@ -31,6 +32,9 @@ const NovelWorkspace: React.FC = () => {
   const [activeTab, setActiveTab] = useState('editor')
   const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null)
   const [siderCollapsed, setSiderCollapsed] = useState(false)
+  const [versionModalOpen, setVersionModalOpen] = useState(false)
+  const [versionList, setVersionList] = useState<any[]>([])
+  const [versionLoading, setVersionLoading] = useState(false)
 
   // 加载小说
   useEffect(() => {
@@ -86,6 +90,59 @@ const NovelWorkspace: React.FC = () => {
         wordCount: content.replace(/\s+/g, '').length
       })
     }
+  }
+
+  const handleFileUpload = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('/api/files/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('文件上传失败');
+      }
+
+      const result = await response.json();
+      if (result.content) {
+        setSelectedChapter((prev) => {
+          if (!prev) return prev;
+          return { ...prev, content: result.content };
+        });
+        message.success('文件上传并解析成功');
+      } else {
+        message.error('文件解析失败');
+      }
+    } catch (error) {
+      const err = error as Error;
+      message.error(err.message || '文件上传失败');
+    }
+  };
+
+  const fetchChapterVersions = async () => {
+    if (!selectedChapter) return
+    setVersionLoading(true)
+    try {
+      const res = await fetch(`/api/chapter/${selectedChapter.id}/versions`)
+      const data = await res.json()
+      if (data.success) {
+        setVersionList(data.data)
+      } else {
+        message.error('获取历史版本失败')
+      }
+    } catch {
+      message.error('获取历史版本失败')
+    } finally {
+      setVersionLoading(false)
+    }
+  }
+
+  const handleOpenVersionModal = () => {
+    fetchChapterVersions()
+    setVersionModalOpen(true)
   }
 
   if (!currentProject) {
@@ -248,6 +305,45 @@ const NovelWorkspace: React.FC = () => {
                   </Col>
                 </Row>
               </div>
+
+              {/* 上传文件按钮 */}
+              <Row justify="end" style={{ marginBottom: 8 }}>
+                <Button onClick={handleOpenVersionModal} style={{ marginRight: 8 }}>版本管理</Button>
+                <Upload
+                  accept=".txt,.md,.html,.json,.docx,.doc"
+                  showUploadList={false}
+                  beforeUpload={(file) => {
+                    handleFileUpload(file);
+                    return false;
+                  }}
+                >
+                  <Button icon={<UploadOutlined />}>上传文件</Button>
+                </Upload>
+              </Row>
+
+              {/* 版本管理弹窗 */}
+              <Modal
+                title="历史版本"
+                open={versionModalOpen}
+                onCancel={() => setVersionModalOpen(false)}
+                footer={null}
+                width={600}
+              >
+                {versionLoading ? (
+                  <Spin />
+                ) : (
+                  <List
+                    dataSource={versionList}
+                    renderItem={item => (
+                      <List.Item>
+                        <div>
+                          <div>版本号: {item.version} | 保存时间: {item.savedAt}</div>
+                        </div>
+                      </List.Item>
+                    )}
+                  />
+                )}
+              </Modal>
 
               {/* 编辑器 */}
               <div style={{ flex: 1, padding: '24px' }}>

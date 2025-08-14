@@ -159,6 +159,8 @@ export class ChapterController {
           return;
         }
         await this.novelService.updateChapterContent(chapterId, content, userId);
+    // 存档历史版本
+    if (chapter.saveVersion) await chapter.saveVersion();
       }
 
       // 更新其他字段
@@ -357,6 +359,9 @@ export class ChapterController {
         version: chapter.version + 1
       });
 
+    // 存档历史版本
+    if (chapter.saveVersion) await chapter.saveVersion();
+
       // 更新项目字数统计
       const wordCountDiff = wordCount - originalWordCount;
       if (wordCountDiff !== 0) {
@@ -377,6 +382,148 @@ export class ChapterController {
 
     } catch (error) {
       logger.error('自动保存失败:', error);
+      res.status(500).json({ error: '服务器内部错误' });
+    }
+  };
+
+  // 获取章节历史版本列表
+  public getChapterVersions = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { chapterId } = req.params;
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({ error: '未授权访问' });
+        return;
+      }
+      const { Chapter, ChapterVersion, Project } = databaseConfig.models!;
+      // 权限校验
+      const chapter = await Chapter.findOne({
+        where: { id: chapterId },
+        include: [{ model: Project, as: 'project', where: { userId } }]
+      });
+      if (!chapter) {
+        res.status(404).json({ error: '章节不存在或无权限访问' });
+        return;
+      }
+      const versions = await ChapterVersion.findAll({
+        where: { chapterId },
+        order: [['savedAt', 'DESC']],
+        attributes: { exclude: ['content'] } // 不返回大文本内容，节省流量
+      });
+      res.json({ success: true, data: versions });
+    } catch (error) {
+      logger.error('获取章节历史版本失败:', error);
+      res.status(500).json({ error: '服务器内部错误' });
+    }
+  };
+
+  // 获取指定历史版本内容
+  public getChapterVersionDetail = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { versionId } = req.params;
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({ error: '未授权访问' });
+        return;
+      }
+      const { ChapterVersion, Chapter, Project } = databaseConfig.models!;
+      const version = await ChapterVersion.findByPk(versionId);
+      if (!version) {
+        res.status(404).json({ error: '历史版本不存在' });
+        return;
+      }
+      // 权限校验
+      const chapter = await Chapter.findOne({
+        where: { id: version.chapterId },
+        include: [{ model: Project, as: 'project', where: { userId } }]
+      });
+      if (!chapter) {
+        res.status(403).json({ error: '无权限访问' });
+        return;
+      }
+      res.json({ success: true, data: version });
+    } catch (error) {
+      logger.error('获取历史版本详情失败:', error);
+      res.status(500).json({ error: '服务器内部错误' });
+    }
+  };
+
+  // 恢复指定历史版本为当前章节内容
+  public restoreChapterVersion = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { versionId } = req.params;
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({ error: '未授权访问' });
+        return;
+      }
+      const { ChapterVersion, Chapter, Project } = databaseConfig.models!;
+      const version = await ChapterVersion.findByPk(versionId);
+      if (!version) {
+        res.status(404).json({ error: '历史版本不存在' });
+        return;
+      }
+      // 权限校验
+      const chapter = await Chapter.findOne({
+        where: { id: version.chapterId },
+        include: [{ model: Project, as: 'project', where: { userId } }]
+      });
+      if (!chapter) {
+        res.status(403).json({ error: '无权限访问' });
+        return;
+      }
+      // 恢复内容
+      await chapter.update({
+        content: version.content,
+        title: version.title,
+        summary: version.summary,
+        notes: version.notes,
+        tags: version.tags,
+        outline: version.outline,
+        wordCount: version.wordCount,
+        version: version.version
+      });
+      await chapter.saveVersion(); // 恢复后也存档一次
+      res.json({ success: true, message: '恢复成功' });
+    } catch (error) {
+      logger.error('恢复历史版本失败:', error);
+      res.status(500).json({ error: '服务器内部错误' });
+    }
+  };
+
+  // 对比两个历史版本内容
+  public diffChapterVersions = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { versionIdA, versionIdB } = req.params;
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({ error: '未授权访问' });
+        return;
+      }
+      const { ChapterVersion, Chapter, Project } = databaseConfig.models!;
+      const versionA = await ChapterVersion.findByPk(versionIdA);
+      const versionB = await ChapterVersion.findByPk(versionIdB);
+      if (!versionA || !versionB) {
+        res.status(404).json({ error: '历史版本不存在' });
+        return;
+      }
+      // 权限校验
+      const chapter = await Chapter.findOne({
+        where: { id: versionA.chapterId },
+        include: [{ model: Project, as: 'project', where: { userId } }]
+      });
+      if (!chapter) {
+        res.status(403).json({ error: '无权限访问' });
+        return;
+      }
+      // 简单文本 diff（可扩展为更复杂的 diff）
+      const diff = {
+        contentA: versionA.content,
+        contentB: versionB.content
+      };
+      res.json({ success: true, data: diff });
+    } catch (error) {
+      logger.error('对比历史版本失败:', error);
       res.status(500).json({ error: '服务器内部错误' });
     }
   };

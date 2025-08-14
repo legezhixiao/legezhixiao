@@ -44,45 +44,39 @@
 - ArangoDB >= 3.9.0
 - PM2 >= 5.4.2
 
-### 前端开发
+### 一键启动
 
 ```bash
 # 克隆项目
-git clone https://github.com/lessstoryclassmate/legezhixiao.git
+git clone https://github.com/legezhixiao/legezhixiao.git
 cd legezhixiao
 
-# 设置前端环境
-chmod +x setup-frontend.sh
-./setup-frontend.sh
+# 完整启动（推荐）- 自动启动数据库和所有服务
+./scripts/start-pm2.sh
 
-# 启动前端开发服务器
-cd frontend
-npm run dev
+# 简化启动（如果数据库已运行）
+./start-dev.sh
+
+# 停止服务
+./stop-dev.sh
 ```
 
-### 后端开发
+### 服务访问地址
+
+- **前端应用**: http://localhost:5173
+- **后端API**: http://localhost:3000
+- **数据库Web界面**: http://localhost:8529
+
+### PM2 管理命令
 
 ```bash
-# 进入后端目录
-cd backend
-
-# 复制环境配置
-cp .env.example .env
-# 编辑 .env 文件，配置数据库连接等信息
-
-# 安装依赖
-npm install
-
-# 启动开发服务器
-npm run dev
+pm2 status          # 查看服务状态
+pm2 logs            # 查看所有日志
+pm2 restart all     # 重启所有服务
+pm2 stop all        # 停止所有服务
 ```
 
-### 数据库设置
-
-```bash
-# ArangoDB (原生安装)
-sudo systemctl start arangodb3
-```
+> 📖 **详细启动说明**: 查看 [STARTUP_GUIDE.md](STARTUP_GUIDE.md) 获取完整的启动和管理指南
 
 ## 📚 详细文档
 
